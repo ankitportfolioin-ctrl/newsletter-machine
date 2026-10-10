@@ -1,5 +1,29 @@
 # PROGRESS.md — Newsletter Machine
 
+## Deploy migration: Supabase + GitHub + Vercel (PARTIAL 2026-10-10 — Vercel needs human)
+
+### DONE (verified this session)
+- Supabase LIVE: pooler URL works (note: `#` in password must be `%23`-encoded).
+  `test_deploy.py` incl. real Postgres roundtrip: **4 passed**. Finding fixed:
+  Postgres enforces `items.niche_id` FK (SQLite doesn't) — probe test now
+  creates the niche row first, mirroring `ensure_niche_row`.
+- GitHub PUSHED: `ankitportfolioin-ctrl/newsletter-machine` (public, confirmed
+  via API: `pushed_at` = our push, default branch `main`, language Python).
+  Local git: 4 commits, clean tree, remote `origin` set. PAT note: Bearer-header
+  auth failed, Basic (`x-access-token:`) worked.
+- Vercel files in repo: `api/index.py` (identity-tested), `vercel.json`,
+  `requirements.txt` (193 pins incl. psycopg), `.python-version` 3.12.
+- Serverless fallbacks tested (read-only-FS persist, DB-backed preview).
+
+### BLOCKED ON HUMAN
+- Vercel CLI here is logged in as `thedreampairco-cmyk` — user confirmed NOT
+  theirs. No deploy attempted there. User must: `vercel login` as
+  ankit.portfolio.in@gmail.com (or dashboard import), set env vars below,
+  deploy, open `/health` + `/dashboard?token=...`.
+- Vercel env vars (all scopes, values shared privately — never committed):
+  `DATABASE_URL` = Supabase pooler URL (`postgresql+psycopg://`, `%23` for `#`);
+  `API_TOKEN` = fresh generated token (shared privately); `LLM_PROVIDER=stub`.
+
 ## Deploy migration: Supabase + GitHub + Vercel (IN PROGRESS, code done 2026-10-10)
 
 ### Code changes (done, verified locally)
