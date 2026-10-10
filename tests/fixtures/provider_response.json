@@ -1,0 +1,21 @@
+{
+  "items": [
+    {
+      "platform": "x",
+      "external_id": "prov-tweet-1",
+      "url": "https://x.com/provuser/status/111?utm_source=x",
+      "title": "Provider tweet",
+      "text": "RECORDED FIXTURE provider-supplied post body.",
+      "author": "@provuser",
+      "published_at": "2026-10-09T10:00:00+00:00",
+      "language": "en",
+      "metrics": { "likes": 42, "shares": 7 },
+      "media_urls": []
+    },
+    {
+      "url": "https://example.com/prov-item-2",
+      "title": "Provider item without external_id",
+      "text": "Body two."
+    }
+  ]
+}

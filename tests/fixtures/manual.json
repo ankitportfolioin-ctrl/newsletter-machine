@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "platform": "blogs",
+      "external_id": "json-1",
+      "url": "https://example.com/json-1",
+      "title": "Json Title",
+      "text": "Json body",
+      "author": "Carol",
+      "language": "en"
+    }
+  ]
+}

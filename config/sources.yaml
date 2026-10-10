@@ -1,0 +1,46 @@
+# Tier per collector = PREFERRED tier; collectors fall back down the chain and
+# always report which tier actually produced items (see README "Tiers").
+# official_api | rss | provider | manual | disabled
+collectors:
+  youtube:
+    enabled: true
+    tier: official_api
+    credential_env_vars: ["YOUTUBE_API_KEY"]
+    rate_limit_per_min: 30
+    item_cap_per_run: 50
+  reddit:
+    enabled: true
+    tier: official_api
+    credential_env_vars: ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"]
+    rate_limit_per_min: 30
+    item_cap_per_run: 50
+  blogs:
+    enabled: true
+    tier: rss
+    credential_env_vars: []
+    rate_limit_per_min: 60
+    item_cap_per_run: 100
+  x:
+    enabled: true
+    tier: official_api
+    credential_env_vars: ["X_BEARER_TOKEN", "PROVIDER_BASE_URL", "PROVIDER_API_KEY"]
+    rate_limit_per_min: 15
+    item_cap_per_run: 30
+  linkedin:
+    enabled: true
+    tier: official_api
+    credential_env_vars: ["LINKEDIN_ACCESS_TOKEN", "PROVIDER_BASE_URL", "PROVIDER_API_KEY"]
+    rate_limit_per_min: 15
+    item_cap_per_run: 30
+  instagram:
+    enabled: true
+    tier: official_api
+    credential_env_vars: ["INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_BUSINESS_ID", "PROVIDER_BASE_URL", "PROVIDER_API_KEY"]
+    rate_limit_per_min: 15
+    item_cap_per_run: 30
+  quora:
+    enabled: true
+    tier: manual
+    credential_env_vars: ["PROVIDER_BASE_URL", "PROVIDER_API_KEY"]
+    rate_limit_per_min: 10
+    item_cap_per_run: 20

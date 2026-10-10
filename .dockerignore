@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+newsletter_machine.db
+*.db
+output/newsletters/*/
+!output/newsletters/.gitkeep
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+tmp_*/
+tmp.*

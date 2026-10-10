@@ -1,0 +1,23 @@
+{
+  "kind": "youtube#searchListResponse",
+  "items": [
+    {
+      "id": { "videoId": "fixtureVid1" },
+      "snippet": {
+        "title": "Fixture Video One",
+        "channelTitle": "Fixture Channel",
+        "publishedAt": "2026-10-09T10:00:00Z",
+        "description": "RECORDED FIXTURE description one."
+      }
+    },
+    {
+      "id": { "videoId": "fixtureVid2" },
+      "snippet": {
+        "title": "Fixture Video Two",
+        "channelTitle": "Fixture Channel",
+        "publishedAt": "2026-10-09T11:00:00Z",
+        "description": "RECORDED FIXTURE description two."
+      }
+    }
+  ]
+}

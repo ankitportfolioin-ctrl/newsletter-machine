@@ -1,0 +1,4 @@
+# RECORDED FIXTURE URL list
+https://example.com/url-1?utm_source=x
+
+https://example.com/url-2

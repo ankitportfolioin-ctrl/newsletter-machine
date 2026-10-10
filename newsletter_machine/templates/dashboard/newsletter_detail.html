@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>{{ newsletter.subject }}</h1>
+<p class="meta">{{ newsletter.date }} · {{ newsletter.niche_id }} · {{ newsletter.status }}</p>
+<p><a href="/newsletters/{{ newsletter.id }}/preview?token={{ token }}">open raw HTML</a></p>
+<iframe class="preview" src="/newsletters/{{ newsletter.id }}/preview?token={{ token }}"></iframe>
+{% endblock %}

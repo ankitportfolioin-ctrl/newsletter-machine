@@ -1,0 +1,35 @@
+{
+  "data": [
+    {
+      "id": "fixtureTweet1",
+      "text": "RECORDED FIXTURE tweet about AI marketing tools.",
+      "author_id": "u100",
+      "created_at": "2026-10-09T10:00:00.000Z",
+      "public_metrics": {
+        "like_count": 120,
+        "retweet_count": 15,
+        "reply_count": 8,
+        "impression_count": 5000
+      }
+    },
+    {
+      "id": "fixtureTweet2",
+      "text": "RECORDED FIXTURE second tweet.",
+      "author_id": "u200",
+      "created_at": "2026-10-09T11:00:00.000Z",
+      "public_metrics": {
+        "like_count": 5,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 300
+      }
+    }
+  ],
+  "includes": {
+    "users": [
+      { "id": "u100", "username": "fixturemarketer" },
+      { "id": "u200", "username": "otheruser" }
+    ]
+  },
+  "meta": { "result_count": 2 }
+}

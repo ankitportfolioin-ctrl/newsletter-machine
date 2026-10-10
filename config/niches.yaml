@@ -1,0 +1,50 @@
+niches:
+  - id: ai-tools-marketers
+    name: AI tools for marketers
+    description: Practical AI tools, workflows and case studies for marketing teams.
+    keywords_include: ["AI marketing", "ChatGPT", "marketing automation", "prompt engineering"]
+    keywords_exclude: ["crypto", "giveaway"]
+    related_terms: ["LLM", "copywriting", "SEO automation"]
+    targets:
+      subreddits: ["marketing", "artificial", "ChatGPT"]
+      youtube_channels: ["@MarketingAgainstTheGrain"]
+      youtube_queries: ["AI marketing tools 2026"]
+      x_accounts: []
+      x_queries: ["AI marketing tools"]
+      linkedin_queries: ["AI marketing"]
+      linkedin_companies: []
+      instagram_hashtags: ["aimarketing"]
+      instagram_accounts: []
+      quora_topics: ["Marketing", "Artificial-Intelligence"]
+      # Verified working 2026-10-10 (HTTP 200 + parses as RSS in live smoke test).
+      blog_feeds: ["https://www.marketingaiinstitute.com/blog/rss.xml"]
+      blog_domains: ["marketingaiinstitute.com"]
+    language: en
+    min_score: 0.2
+    weight_overrides: {}
+
+  - id: sustainable-travel
+    name: Sustainable travel
+    description: Low-impact travel guides, eco stays, rail itineraries and regulation news.
+    keywords_include: ["sustainable travel", "eco hotel", "rail travel", "overtourism"]
+    keywords_exclude: ["cruise deals"]
+    related_terms: ["slow travel", "carbon offset", "night train"]
+    targets:
+      subreddits: ["travel", "sustainabletravel"]
+      youtube_channels: []
+      youtube_queries: ["sustainable travel 2026"]
+      x_accounts: []
+      x_queries: ["sustainable travel"]
+      linkedin_queries: ["sustainable tourism"]
+      linkedin_companies: []
+      instagram_hashtags: ["sustainabletravel"]
+      instagram_accounts: []
+      quora_topics: ["Travel", "Sustainability"]
+      # Verified working 2026-10-10 (HTTP 200 + parses as RSS in live smoke test).
+      # responsibletravel.com publishes no RSS feed, so it is intentionally absent here;
+      # use manual import (Phase 2) for sites without feeds.
+      blog_feeds: ["https://www.theguardian.com/travel/rss"]
+      blog_domains: []
+    language: en
+    min_score: 0.2
+    weight_overrides: {}

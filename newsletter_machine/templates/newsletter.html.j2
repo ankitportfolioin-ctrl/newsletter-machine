@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{{ n.subject }}</title>
+<style>
+body { margin: 0; padding: 0; background: #f4f4f5; color: #18181b; font-family: Arial, Helvetica, sans-serif; }
+.wrap { width: 100%; background: #f4f4f5; padding: 24px 0; }
+.card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; }
+.header { background: #18181b; color: #ffffff; padding: 24px; }
+.header h1 { margin: 0 0 4px 0; font-size: 22px; }
+.header p { margin: 0; font-size: 13px; color: #d4d4d8; }
+.preheader { display: none; max-height: 0; overflow: hidden; opacity: 0; }
+.section { padding: 20px 24px; border-top: 1px solid #e4e4e7; }
+.section h2 { margin: 0 0 12px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; color: #3f3f46; }
+.story { margin: 0 0 16px 0; }
+.story h3 { margin: 0 0 6px 0; font-size: 17px; }
+.story p { margin: 0 0 6px 0; font-size: 14px; line-height: 1.5; }
+.why { font-size: 13px; color: #52525b; }
+.badge { display: inline-block; font-size: 11px; font-weight: bold; background: #e4e4e7; color: #3f3f46; border-radius: 4px; padding: 2px 6px; margin-right: 4px; text-transform: uppercase; }
+.meta { font-size: 12px; color: #71717a; }
+a { color: #2563eb; }
+.footer { padding: 20px 24px; font-size: 12px; color: #71717a; border-top: 1px solid #e4e4e7; }
+ul.tight { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+.quote { border-left: 3px solid #2563eb; padding-left: 12px; margin: 0 0 12px 0; font-size: 14px; }
+@media (prefers-color-scheme: dark) {
+  body, .wrap { background: #09090b !important; color: #e4e4e7 !important; }
+  .card { background: #18181b !important; }
+  .section { border-color: #3f3f46 !important; }
+  .section h2 { color: #a1a1aa !important; }
+  .badge { background: #3f3f46 !important; color: #e4e4e7 !important; }
+  .why, .meta, .footer { color: #a1a1aa !important; }
+  a { color: #93c5fd !important; }
+}
+</style>
+</head>
+<body>
+<span class="preheader">{{ n.preheader }}</span>
+<div class="wrap">
+<div class="card">
+<div class="header">
+<h1>{{ n.name }} — {{ n.niche_name }}</h1>
+<p>{{ n.tagline }} &middot; {{ n.date }}</p>
+</div>
+
+{% if 'tldr' in n.enabled_sections and n.tldr %}
+<div class="section">
+<h2>TL;DR</h2>
+<ul class="tight">
+{% for bullet in n.tldr %}<li>{{ bullet }}</li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if 'top_stories' in n.enabled_sections and n.top_stories %}
+<div class="section">
+<h2>Top Stories</h2>
+{% for story in n.top_stories %}
+<div class="story">
+<h3>{{ story.title }}</h3>
+<p>{{ story.summary }}</p>
+{% if story.why_it_matters %}<p class="why"><strong>Why it matters:</strong> {{ story.why_it_matters }}</p>{% endif %}
+<p class="meta">{% for src in story.sources %}<span class="badge">{{ src.platform or 'link' }}</span> <a href="{{ src.url }}">{{ src.url }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</p>
+{% if story.feedback_up %}<p class="meta"><a href="{{ story.feedback_up }}">👍 Useful</a> &middot; <a href="{{ story.feedback_down }}">👎 Not useful</a></p>{% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if 'trend_radar' in n.enabled_sections and n.trends %}
+<div class="section">
+<h2>Trend Radar</h2>
+<ul class="tight">
+{% for trend in n.trends %}<li><strong>{{ trend.label }}</strong> ({{ trend.momentum }}) — {{ trend.note }}</li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if 'platform_highlights' in n.enabled_sections and n.platform_highlights %}
+<div class="section">
+<h2>Platform Highlights</h2>
+<ul class="tight">
+{% for hl in n.platform_highlights %}<li><strong>{{ hl.platform }}</strong> — {{ hl.note }}</li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if 'voices' in n.enabled_sections and n.quotes %}
+<div class="section">
+<h2>Voices &amp; Hot Takes</h2>
+{% for q in n.quotes %}
+<p class="quote">“{{ q.text }}”<br><span class="meta">— {{ q.author or 'unknown' }}, <a href="{{ q.url }}">source</a></span></p>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if 'questions' in n.enabled_sections and n.questions %}
+<div class="section">
+<h2>Questions of the Day</h2>
+<ul class="tight">
+{% for q in n.questions %}<li>{{ q.question }} <span class="badge">{{ q.platform or 'link' }}</span> <a href="{{ q.url }}">discuss</a></li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if 'opportunities' in n.enabled_sections and n.opportunities %}
+<div class="section">
+<h2>Content Opportunities</h2>
+<ul class="tight">
+{% for o in n.opportunities %}<li><strong>{{ o.title }}</strong><br><span class="meta">Angle: {{ o.angle }} Format: {{ o.format }} Hook: {{ o.hook }}</span></li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if 'action' in n.enabled_sections and n.action_today %}
+<div class="section">
+<h2>Action of the Day</h2>
+<p>{{ n.action_today }}</p>
+</div>
+{% endif %}
+
+{% if 'coverage' in n.enabled_sections %}
+<div class="section">
+<h2>Coverage &amp; Diagnostics</h2>
+<p class="meta">{{ n.confidence_note }}</p>
+{% if n.coverage %}<p class="meta">Items analyzed — {% for platform, count in n.coverage.items() %}{{ platform }}: {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+{% if n.diagnostics %}
+<p class="meta">Collector tiers — {% for name, stats in (n.diagnostics.get('stats') or {}).items() %}{{ name }}: {{ stats.tier_used }} ({{ stats['items'] }} items){% if not loop.last %}; {% endif %}{% endfor %}</p>
+{% set errs = n.diagnostics.get('errors') or [] %}
+{% if errs %}<p class="meta">Source notes — {% for e in errs[:5] %}{{ e }}{% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+{% set dropped = n.diagnostics.get('dropped') or {} %}
+{% set dropped_total = dropped.values() | sum %}
+{% if dropped_total %}<p class="meta">Ungrounded claims dropped by validator: {{ dropped_total }}</p>{% endif %}
+{% endif %}
+</div>
+{% endif %}
+
+<div class="footer">
+<p>{{ n.name }} &middot; {{ n.date }} &middot; built by Newsletter Machine. Reply with feedback any time.</p>
+</div>
+
+</div>
+</div>
+</body>
+</html>

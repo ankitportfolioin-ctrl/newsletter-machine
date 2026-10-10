@@ -1,0 +1,132 @@
+[
+  {
+    "platform": "youtube",
+    "external_id": "yt1",
+    "url": "https://www.youtube.com/watch?v=aiTools2026",
+    "author": "Fixture Channel",
+    "title": "Best AI marketing tools in 2026",
+    "text": "A roundup of the best AI marketing tools for modern teams, with ChatGPT workflows and marketing automation demos you can copy this week.",
+    "age_hours": 5,
+    "metrics": {"views": 50000, "likes": 2000, "comments": 300}
+  },
+  {
+    "platform": "blogs",
+    "external_id": "blog1",
+    "url": "https://example.com/blog/ai-marketing-tools-breakdown",
+    "author": "Jane Writer",
+    "title": "Best AI marketing tools 2026: full breakdown",
+    "text": "Our full breakdown of the best AI marketing tools covers ChatGPT workflows, marketing automation setups, and pricing for every team size this year.",
+    "age_hours": 10,
+    "metrics": {"views": 800, "likes": 40, "comments": 9}
+  },
+  {
+    "platform": "blogs",
+    "external_id": "blog1b",
+    "url": "https://example.com/blog/ai-marketing-tools-breakdown-repost",
+    "author": "Repost Bot",
+    "title": "Best AI marketing tools 2026: full breakdown",
+    "text": "Our full breakdown of the best AI marketing tools covers ChatGPT workflows, marketing automation setups, and pricing for every squad size this week.",
+    "age_hours": 11,
+    "metrics": {"views": 50, "likes": 2, "comments": 0}
+  },
+  {
+    "platform": "reddit",
+    "external_id": "r1",
+    "url": "https://www.reddit.com/r/marketing/comments/r1/ai_tools_megathread/",
+    "author": "fixture_user",
+    "title": "AI marketing tools megathread — what actually works?",
+    "text": "Share the AI marketing tools that actually moved numbers for you. ChatGPT for drafts, marketing automation for followups — what else is real?",
+    "age_hours": 3,
+    "metrics": {"upvotes": 2500, "comments": 180}
+  },
+  {
+    "platform": "x",
+    "external_id": "x1",
+    "url": "https://x.com/fixturemarketer/status/1001",
+    "author": "@fixturemarketer",
+    "title": "We just launched an AI marketing automation flow",
+    "text": "We just launched an AI marketing automation flow that drafts, personalizes and sends in one pass. Early numbers look strong.",
+    "age_hours": 1,
+    "metrics": {"views": 9000, "likes": 300, "shares": 40, "comments": 25}
+  },
+  {
+    "platform": "quora",
+    "external_id": "q1",
+    "url": "https://www.quora.com/What-is-the-best-AI-marketing-tool",
+    "author": "curious_reader",
+    "title": "What is the best AI marketing tool for a small team?",
+    "text": "What is the best AI marketing tool for a small team with no budget? Looking for ChatGPT tips and free marketing automation options.",
+    "age_hours": 30,
+    "metrics": {}
+  },
+  {
+    "platform": "linkedin",
+    "external_id": "li1",
+    "url": "https://www.linkedin.com/posts/fixture_ai-marketing-b2b",
+    "author": "B2B Lead",
+    "title": "AI marketing for B2B: what moved pipeline",
+    "text": "Three AI marketing plays that moved our B2B pipeline this quarter, including LLM qualification and automated followup sequences.",
+    "age_hours": 12,
+    "metrics": {"likes": 120, "comments": 18}
+  },
+  {
+    "platform": "blogs",
+    "external_id": "t1",
+    "url": "https://example.com/blog/night-trains-slow-travel",
+    "author": "Travel Writer",
+    "title": "Night trains: a slow travel guide to Europe",
+    "text": "Sleeper trains are back. This slow travel guide covers night routes, booking tips and station hotels for relaxed rail journeys across Europe.",
+    "age_hours": 8,
+    "metrics": {"views": 3000, "likes": 150, "comments": 20}
+  },
+  {
+    "platform": "blogs",
+    "external_id": "t2",
+    "url": "https://example.com/blog/sleeper-trains-eco-lodges",
+    "author": "Rail Fan",
+    "title": "Sleeper trains and eco lodges for slow travellers",
+    "text": "Combine sleeper trains with eco lodges for a low impact holiday. Rail passes, green stays and packing light make train travel easy and restful.",
+    "age_hours": 6,
+    "metrics": {"views": 1200, "likes": 60, "comments": 8}
+  },
+  {
+    "platform": "blogs",
+    "external_id": "old1",
+    "url": "https://example.com/blog/chatgpt-prompt-pack",
+    "author": "Jane Writer",
+    "title": "ChatGPT prompt pack for marketers",
+    "text": "Two hundred days ago this ChatGPT prompt pack for marketers went viral. The prompts still work for drafting and brainstorming sessions today.",
+    "age_hours": 200,
+    "metrics": {"views": 90000, "likes": 4000, "comments": 500}
+  },
+  {
+    "platform": "reddit",
+    "external_id": "dupurl",
+    "url": "https://example.com/blog/ai-marketing-tools-breakdown",
+    "author": "sharer",
+    "title": "Someone posted the breakdown",
+    "text": "Cross-post of the AI marketing tools breakdown from the blogs.",
+    "age_hours": 9,
+    "metrics": {"upvotes": 100, "comments": 10}
+  },
+  {
+    "platform": "manual",
+    "external_id": "noise1",
+    "url": "https://example.com/crypto-giveaway",
+    "author": "spammer",
+    "title": "Crypto giveaway!!! Double your coins",
+    "text": "Send one coin and get two back in this limited crypto giveaway event.",
+    "age_hours": 2,
+    "metrics": {}
+  },
+  {
+    "platform": "instagram",
+    "external_id": "noise2",
+    "url": "https://www.instagram.com/p/beachday/",
+    "author": "",
+    "title": "Beach day",
+    "text": "Sun, sand and absolutely no shop talk today.",
+    "age_hours": 4,
+    "metrics": {"likes": 500, "comments": 30}
+  }
+]

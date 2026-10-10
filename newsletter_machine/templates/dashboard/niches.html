@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>Niches</h1>
+<table>
+<tr><th>id</th><th>name</th><th>description</th><th></th></tr>
+{% for niche in niches %}
+<tr>
+<td><code>{{ niche.id }}</code></td>
+<td>{{ niche.name }}</td>
+<td>{{ niche.description }}</td>
+<td><form class="inline" method="post" action="/dashboard/niches/{{ niche.id }}/delete?token={{ token }}"><button type="submit">delete</button></form></td>
+</tr>
+{% endfor %}
+</table>
+<h2>Create / update</h2>
+<form method="post" action="/dashboard/niches?token={{ token }}">
+<p><label>id <input name="id" required></label></p>
+<p><label>name <input name="name" required></label></p>
+<p><label>description <input name="description" size="60"></label></p>
+<p><button type="submit">save</button> <span class="meta">Note: <code>init</code>/<code>collect</code> re-sync name/description from niches.yaml.</span></p>
+</form>
+{% endblock %}

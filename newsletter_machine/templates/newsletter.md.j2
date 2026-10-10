@@ -1,0 +1,78 @@
+# {{ n.subject }}
+
+> {{ n.preheader }}
+
+{% if 'tldr' in n.enabled_sections and n.tldr %}
+## TL;DR
+{% for bullet in n.tldr %}
+- {{ bullet }}
+{% endfor %}
+{% endif %}
+{% if 'top_stories' in n.enabled_sections and n.top_stories %}
+## Top Stories
+{% for story in n.top_stories %}
+### {{ story.title }}
+
+{{ story.summary }}
+
+{% if story.why_it_matters %}**Why it matters:** {{ story.why_it_matters }}
+{% endif %}
+{% for src in story.sources %}- `[{{ src.platform or 'link' }}]({{ src.url }})`
+{% endfor %}
+{% if story.feedback_up %}Was this useful? [👍]({{ story.feedback_up }}) / [👎]({{ story.feedback_down }})
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if 'trend_radar' in n.enabled_sections and n.trends %}
+## Trend Radar
+{% for trend in n.trends %}
+- **{{ trend.label }}** ({{ trend.momentum }}) — {{ trend.note }}
+{% endfor %}
+{% endif %}
+{% if 'platform_highlights' in n.enabled_sections and n.platform_highlights %}
+## Platform Highlights
+{% for hl in n.platform_highlights %}
+- **{{ hl.platform }}** — {{ hl.note }}
+{% endfor %}
+{% endif %}
+{% if 'voices' in n.enabled_sections and n.quotes %}
+## Voices & Hot Takes
+{% for q in n.quotes %}
+> "{{ q.text }}"
+> — {{ q.author or 'unknown' }} ([source]({{ q.url }}))
+{% endfor %}
+{% endif %}
+{% if 'questions' in n.enabled_sections and n.questions %}
+## Questions of the Day
+{% for q in n.questions %}
+- {{ q.question }} ([{{ q.platform or 'link' }}]({{ q.url }}))
+{% endfor %}
+{% endif %}
+{% if 'opportunities' in n.enabled_sections and n.opportunities %}
+## Content Opportunities
+{% for o in n.opportunities %}
+- **{{ o.title }}** — Angle: {{ o.angle }} Format: {{ o.format }} Hook: {{ o.hook }}
+{% endfor %}
+{% endif %}
+{% if 'action' in n.enabled_sections and n.action_today %}
+## Action of the Day
+
+{{ n.action_today }}
+{% endif %}
+{% if 'coverage' in n.enabled_sections %}
+## Coverage & Diagnostics
+
+{{ n.confidence_note }}
+
+{% if n.coverage %}Items analyzed: {% for platform, count in n.coverage.items() %}{{ platform }}: {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+{% if n.diagnostics %}
+{% for name, stats in (n.diagnostics.get('stats') or {}).items() %}- {{ name }}: {{ stats.tier_used }} ({{ stats['items'] }} items)
+{% endfor %}
+{% for e in (n.diagnostics.get('errors') or [])[:5] %}- Note: {{ e }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+---
+*{{ n.name }} · {{ n.date }} · built by Newsletter Machine*

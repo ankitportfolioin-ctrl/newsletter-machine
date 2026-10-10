@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>Newsletter Machine</h1>
+<div class="cards">
+<div class="card"><b>{{ counts.niches }}</b>niches</div>
+<div class="card"><b>{{ counts.items }}</b>items</div>
+<div class="card"><b>{{ counts.runs }}</b>runs</div>
+<div class="card"><b>{{ counts.newsletters }}</b>newsletters</div>
+<div class="card"><b>{{ counts.feedback }}</b>feedback votes</div>
+</div>
+<p>Collect from the <a href="/dashboard/runs?token={{ token }}">runs page</a>,
+build with <code>newsletter-machine build</code>, preview in
+<a href="/dashboard/newsletters?token={{ token }}">newsletters</a>.</p>
+{% endblock %}

@@ -1,0 +1,29 @@
+newsletter:
+  name: "Daily Signal"
+  tagline: "What matters in your niche, in 5 minutes."
+  tone: "concise, practical, no hype"
+  sections_order:
+    - tldr
+    - top_stories
+    - trend_radar
+    - platform_highlights
+    - voices
+    - questions
+    - opportunities
+    - action
+    - coverage
+  sections:
+    tldr: { enabled: true, max_items: 5 }
+    top_stories: { enabled: true, max_items: 7 }
+    trend_radar: { enabled: true, max_items: 5 }
+    platform_highlights: { enabled: true, max_items: 7 }
+    voices: { enabled: true, max_items: 5 }
+    questions: { enabled: true, max_items: 5 }
+    opportunities: { enabled: true, max_items: 8 }
+    action: { enabled: true, max_items: 1 }
+    coverage: { enabled: true, max_items: 1 }
+  recipients: []
+  send_time: "07:00"
+  timezone: "UTC"
+  delivery_method: file
+  subject_style: "{date} — {niche}: top stories"

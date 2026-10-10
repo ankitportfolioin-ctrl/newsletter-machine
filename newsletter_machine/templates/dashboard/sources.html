@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>Sources &amp; tier status</h1>
+<p class="meta">Read-only: tiers live in <code>config/sources.yaml</code>. Secrets shown as presence only.</p>
+<table>
+<tr><th>platform</th><th>enabled</th><th>configured tier</th><th>live tier</th><th>note</th><th>credentials</th></tr>
+{% for src in sources %}
+<tr>
+<td><code>{{ src.platform }}</code></td>
+<td>{{ src.enabled }}</td>
+<td>{{ src.configured_tier }}</td>
+<td>{{ src.live_tier }}</td>
+<td>{{ src.note }}</td>
+<td>{% for var, present in src.credentials_present.items() %}{{ var }}: {{ 'set' if present else '—' }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

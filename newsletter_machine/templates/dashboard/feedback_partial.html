@@ -1,0 +1,13 @@
+<table>
+<tr><th>signal</th><th>count</th></tr>
+{% for signal, count in stats.by_signal.items() %}
+<tr><td>{{ signal }}</td><td>{{ count }}</td></tr>
+{% endfor %}
+</table>
+<p class="meta">total: {{ stats.total }}</p>
+<table>
+<tr><th>newsletter</th><th>breakdown</th></tr>
+{% for nid, breakdown in stats.by_newsletter.items() %}
+<tr><td>{{ nid }}</td><td>{{ breakdown }}</td></tr>
+{% endfor %}
+</table>

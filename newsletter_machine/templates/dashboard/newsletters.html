@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>Newsletters</h1>
+<table>
+<tr><th>id</th><th>date</th><th>niche</th><th>subject</th><th>status</th><th></th></tr>
+{% for nl in newsletters %}
+<tr>
+<td>{{ nl.id }}</td>
+<td>{{ nl.date }}</td>
+<td><code>{{ nl.niche_id }}</code></td>
+<td>{{ nl.subject }}</td>
+<td>{{ nl.status }}</td>
+<td><a href="/dashboard/newsletters/{{ nl.id }}?token={{ token }}">preview</a></td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>Runs</h1>
+<h2>Trigger a collection run</h2>
+<form method="post" action="/dashboard/runs/trigger?token={{ token }}">
+<p><label>niche (blank = all) <input name="niche"></label>
+<label>platforms, comma-separated <input name="platforms" placeholder="blogs,reddit"></label>
+<button type="submit">run now</button></p>
+</form>
+<table>
+<tr><th>id</th><th>niche</th><th>status</th><th>finished</th><th>per-collector stats / errors</th></tr>
+{% for run in runs %}
+<tr>
+<td>{{ run.id }}</td>
+<td>{{ run.niche_id }}</td>
+<td><strong>{{ run.status }}</strong></td>
+<td class="meta">{{ run.finished_at or '—' }}</td>
+<td><pre>{{ run.stats | tojson(indent=1) }}{% if run.errors %}
+
+ERRORS:
+{% for e in run.errors %}- {{ e }}
+{% endfor %}{% endif %}</pre></td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

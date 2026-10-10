@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RECORDED FIXTURE (not a live response): minimal RSS 2.0 feed for tests. -->
+<rss version="2.0">
+  <channel>
+    <title>Fixture Blog</title>
+    <link>https://example.com/blog</link>
+    <item>
+      <guid>fixture-post-1</guid>
+      <title>Fixture Post One</title>
+      <link>https://example.com/blog/post-1?utm_source=newsletter&amp;fbclid=xyz</link>
+      <author>Jane Writer</author>
+      <pubDate>Thu, 09 Oct 2026 10:00:00 GMT</pubDate>
+      <description><![CDATA[<p>Short summary one.</p>]]></description>
+    </item>
+    <item>
+      <guid>fixture-post-2</guid>
+      <title>Fixture Post Two</title>
+      <link>https://example.com/blog/post-2</link>
+      <author>John Writer</author>
+      <pubDate>Thu, 09 Oct 2026 12:00:00 GMT</pubDate>
+      <description><![CDATA[<p>Short summary two with a bit more text to shape extraction.</p>]]></description>
+    </item>
+    <item>
+      <guid>fixture-post-old</guid>
+      <title>Old Post (filtered by since)</title>
+      <link>https://example.com/blog/old-post</link>
+      <pubDate>Wed, 01 Jan 2020 00:00:00 GMT</pubDate>
+      <description><![CDATA[<p>Ancient history.</p>]]></description>
+    </item>
+  </channel>
+</rss>

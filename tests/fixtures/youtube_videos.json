@@ -1,0 +1,25 @@
+{
+  "kind": "youtube#videoListResponse",
+  "items": [
+    {
+      "id": "fixtureVid1",
+      "snippet": {
+        "title": "Fixture Video One",
+        "channelTitle": "Fixture Channel",
+        "publishedAt": "2026-10-09T10:00:00Z",
+        "description": "RECORDED FIXTURE description one."
+      },
+      "statistics": { "viewCount": "12345", "likeCount": "678", "commentCount": "90" }
+    },
+    {
+      "id": "fixtureVid2",
+      "snippet": {
+        "title": "Fixture Video Two",
+        "channelTitle": "Fixture Channel",
+        "publishedAt": "2026-10-09T11:00:00Z",
+        "description": "RECORDED FIXTURE description two."
+      },
+      "statistics": { "viewCount": "111", "likeCount": "22", "commentCount": "3" }
+    }
+  ]
+}

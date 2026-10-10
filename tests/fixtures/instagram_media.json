@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "id": "igmedia1",
+      "caption": "Loving these #AIMarketing tools this week.",
+      "like_count": 250,
+      "comments_count": 12,
+      "timestamp": "2026-10-09T10:00:00+00:00",
+      "permalink": "https://www.instagram.com/p/fixture1/",
+      "media_url": "https://example.com/ig1.jpg",
+      "media_type": "IMAGE"
+    },
+    {
+      "id": "igmedia2",
+      "caption": "Beach day, no marketing talk.",
+      "like_count": 999,
+      "comments_count": 99,
+      "timestamp": "2026-10-09T11:00:00+00:00",
+      "permalink": "https://www.instagram.com/p/fixture2/",
+      "media_url": "https://example.com/ig2.jpg",
+      "media_type": "IMAGE"
+    }
+  ]
+}

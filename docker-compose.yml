@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: sqlite:///./newsletter_machine.db
+      LOG_FORMAT: json
+    volumes:
+      - ./output:/app/output
+      - ./newsletter_machine.db:/app/newsletter_machine.db

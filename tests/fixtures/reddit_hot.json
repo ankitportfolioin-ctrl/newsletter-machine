@@ -1,0 +1,38 @@
+{
+  "kind": "Listing",
+  "data": {
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "id": "fix001",
+          "title": "RECORDED FIXTURE post one",
+          "author": "fixture_user",
+          "subreddit": "marketing",
+          "permalink": "/r/marketing/comments/fix001/fixture_post_one/",
+          "url_overridden_by_dest": "https://example.com/fixture-one",
+          "selftext": "RECORDED FIXTURE body one.",
+          "score": 1234,
+          "upvote_ratio": 0.95,
+          "num_comments": 56,
+          "created_utc": 1760000000
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "id": "fix002",
+          "title": "RECORDED FIXTURE post two",
+          "author": "another_user",
+          "subreddit": "marketing",
+          "permalink": "/r/marketing/comments/fix002/fixture_post_two/",
+          "selftext": "",
+          "score": 42,
+          "upvote_ratio": 0.8,
+          "num_comments": 7,
+          "created_utc": 1760003600
+        }
+      }
+    ]
+  }
+}
