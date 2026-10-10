@@ -1,0 +1,31 @@
+# Daily newsletter: collect + build against the deployed app (Supabase-backed).
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   APP_URL   e.g. https://newsletter-machine-zeta.vercel.app
+#   API_TOKEN must match the app's API_TOKEN env var
+# Runs at 06:00 UTC daily; also runnable by hand from the Actions tab.
+
+name: Daily newsletter
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect (all niches, 24h window)
+        run: |
+          curl --fail --show-error -X POST "$APP_URL/runs" \
+            -H "X-API-Token: $API_TOKEN" -H "Content-Type: application/json" \
+            -d '{"since_hours": 24}' | head -c 2000; echo
+      - name: Build (all niches, stub or configured LLM)
+        run: |
+          curl --fail --show-error -X POST "$APP_URL/newsletters/build" \
+            -H "X-API-Token: $API_TOKEN" -H "Content-Type: application/json" \
+            -d '{"since_hours": 168}' | head -c 2000; echo
+    env:
+      APP_URL: ${{ secrets.APP_URL }}
+      API_TOKEN: ${{ secrets.API_TOKEN }}
