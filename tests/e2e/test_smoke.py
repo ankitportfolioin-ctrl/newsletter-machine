@@ -18,18 +18,18 @@ def test_dashboard_loads(authenticated_page: Page, api_token: str) -> None:
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible()
     expect(page.get_by_role("heading", name="Quick Actions")).to_be_visible()
 
-    # Verify Quick Actions buttons are present
-    expect(page.get_by_role("link", name="Run Collection")).to_be_visible()
+    # Verify Quick Actions buttons are present (use first to handle duplicates)
+    expect(page.get_by_role("link", name="Run Collection").first).to_be_visible()
     expect(page.get_by_role("link", name="View Newsletters")).to_be_visible()
     expect(page.get_by_role("link", name="Manage Niches")).to_be_visible()
     expect(page.get_by_role("link", name="Manage Sources")).to_be_visible()
 
-    # Check stats cards
-    expect(page.get_by_text("Niches")).to_be_visible()
-    expect(page.get_by_text("Items")).to_be_visible()
-    expect(page.get_by_text("Runs")).to_be_visible()
-    expect(page.get_by_text("Newsletters")).to_be_visible()
-    expect(page.get_by_text("Feedback")).to_be_visible()
+    # Check stats cards (use locator with exact match)
+    expect(page.locator(".stat-label").filter(has_text="Niches")).to_be_visible()
+    expect(page.locator(".stat-label").filter(has_text="Items")).to_be_visible()
+    expect(page.locator(".stat-label").filter(has_text="Runs")).to_be_visible()
+    expect(page.locator(".stat-label").filter(has_text="Newsletters")).to_be_visible()
+    expect(page.locator(".stat-label").filter(has_text="Feedback")).to_be_visible()
 
 
 @pytest.mark.e2e

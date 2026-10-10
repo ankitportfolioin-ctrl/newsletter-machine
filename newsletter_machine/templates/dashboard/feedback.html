@@ -7,7 +7,7 @@
   </div>
 </div>
 
-<div id="feedbackStats">
+<div id="feedbackStats" hx-get="/dashboard/feedback/partial?token={{ token }}" hx-trigger="every 30s" hx-swap="innerHTML">
   {% include 'feedback_partial.html' %}
 </div>
 {% endblock %}

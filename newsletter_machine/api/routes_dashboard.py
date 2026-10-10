@@ -29,13 +29,46 @@ from newsletter_machine.db.models import Newsletter as NewsletterRow
 from newsletter_machine.db.models import Niche as NicheRow
 from newsletter_machine.db.models import Run as RunRow
 
+
+def _datetimeformat(value: datetime | str | None, format: str = "%Y-%m-%d %H:%M") -> str:
+    """Format datetime for display."""
+    if value is None:
+        return "—"
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return value
+    return value.strftime(format)
+
+
+def _escapejs(value: str) -> str:
+    """Escape string for JavaScript context."""
+    if value is None:
+        return ""
+    return (
+        value.replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+    )
+
+
 router = APIRouter(dependencies=[Depends(require_token)])
 TEMPLATES = Environment(
     loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates" / "dashboard"))
 )
+TEMPLATES.filters["datetimeformat"] = _datetimeformat
+TEMPLATES.filters["escapejs"] = _escapejs
 
 
-def _render(name: str, **ctx: Any) -> HTMLResponse:
+def _render(name: str, request: Request | None = None, **ctx: Any) -> HTMLResponse:
+    if request:
+        ctx["request"] = request
     return HTMLResponse(content=TEMPLATES.get_template(name).render(**ctx))
 
 
@@ -52,13 +85,25 @@ def dashboard_index(request: Request, session: Session = Depends(db_session)) ->
         "newsletters": session.query(NewsletterRow).count(),
         "feedback": session.query(FeedbackRow).count(),
     }
-    return _render("index.html", token=_token(request), counts=counts)
+    recent_runs = (
+        session.query(RunRow)
+        .order_by(RunRow.id.desc())
+        .limit(5)
+        .all()
+    )
+    return _render(
+        "index.html",
+        request=request,
+        token=_token(request),
+        counts=counts,
+        recent_runs=recent_runs,
+    )
 
 
 @router.get("/dashboard/niches", response_class=HTMLResponse)
 def dashboard_niches(request: Request, session: Session = Depends(db_session)) -> HTMLResponse:
     niches = session.query(NicheRow).order_by(NicheRow.id).all()
-    return _render("niches.html", token=_token(request), niches=niches)
+    return _render("niches.html", request=request, token=_token(request), niches=niches)
 
 
 @router.post("/dashboard/niches")
@@ -102,13 +147,13 @@ def dashboard_niche_delete(
 def dashboard_sources(
     request: Request, settings: Settings = Depends(current_settings)
 ) -> HTMLResponse:
-    return _render("sources.html", token=_token(request), sources=list_sources(settings)["sources"])
+    return _render("sources.html", request=request, token=_token(request), sources=list_sources(settings)["sources"])
 
 
 @router.get("/dashboard/runs", response_class=HTMLResponse)
 def dashboard_runs(request: Request, session: Session = Depends(db_session)) -> HTMLResponse:
     return _render(
-        "runs.html", token=_token(request), runs=list_runs(limit=20, session=session)["runs"]
+        "runs.html", request=request, token=_token(request), runs=list_runs(limit=20, session=session)["runs"]
     )
 
 
@@ -137,7 +182,7 @@ def dashboard_trigger(
 @router.get("/dashboard/newsletters", response_class=HTMLResponse)
 def dashboard_newsletters(request: Request, session: Session = Depends(db_session)) -> HTMLResponse:
     rows = session.query(NewsletterRow).order_by(NewsletterRow.id.desc()).limit(50).all()
-    return _render("newsletters.html", token=_token(request), newsletters=rows)
+    return _render("newsletters.html", request=request, token=_token(request), newsletters=rows)
 
 
 @router.get("/dashboard/newsletters/{newsletter_id}", response_class=HTMLResponse)
@@ -147,13 +192,14 @@ def dashboard_newsletter_detail(
     row = session.get(NewsletterRow, newsletter_id)
     if row is None:
         raise HTTPException(status_code=404, detail="newsletter not found")
-    return _render("newsletter_detail.html", token=_token(request), newsletter=row)
+    return _render("newsletter_detail.html", request=request, token=_token(request), newsletter=row)
 
 
 @router.get("/dashboard/feedback", response_class=HTMLResponse)
 def dashboard_feedback(request: Request, session: Session = Depends(db_session)) -> HTMLResponse:
     return _render(
         "feedback.html",
+        request=request,
         token=_token(request),
         stats=feedback_stats(session=session),
         partial=False,
