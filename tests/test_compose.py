@@ -159,6 +159,32 @@ async def test_build_newsletter_writes_files_and_upserts(tmp_path: Path) -> None
         session.close()
 
 
+async def test_build_newsletter_survives_readonly_fs(tmp_path: Path) -> None:
+    from newsletter_machine.config import Settings
+    from newsletter_machine.db.models import Base, Newsletter
+    from newsletter_machine.db.session import get_engine, make_session_factory
+
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a dir", encoding="utf-8")
+    settings = Settings(
+        _env_file=None,
+        database_url="sqlite:///:memory:",  # type: ignore[call-arg]
+        output_dir=str(blocker / "out"),
+    )
+    engine = get_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    session = make_session_factory(engine)()
+    try:
+        analysis = await _analysis()
+        result = build_newsletter(
+            session, settings, _niche(), "2026-10-10", analysis, {}, {}, _cfg()
+        )
+        assert result["html_path"] == ""
+        assert session.query(Newsletter).count() == 1
+    finally:
+        session.close()
+
+
 async def test_digest_merges_niches() -> None:
     analysis = await _analysis()
     first = compose_content(_niche(), "2026-10-10", analysis, {}, {}, 1, _cfg())

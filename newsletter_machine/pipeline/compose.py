@@ -309,10 +309,10 @@ def build_newsletter(
     from newsletter_machine.db.models import Newsletter as NewsletterRow
 
     niche_id = niche_label or str(getattr(niche, "id", "digest"))
-    out_dir = Path(settings.output_dir) / date_str / niche_id
-    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Reserve the row first so feedback links carry the real newsletter id.
+    # (No mkdir here: persist_rendered owns file writes and degrades gracefully
+    # on read-only filesystems.)
     row = session.query(NewsletterRow).filter_by(date=date_str, niche_id=niche_id).one_or_none()
     if row is None:
         row = NewsletterRow(date=date_str, niche_id=niche_id, subject="", status="built")
