@@ -37,10 +37,21 @@ class OpenAIClient(LLMClient):
         base_url: str | None = None,
     ) -> None:
         self.api_key = api_key if api_key is not None else os.getenv("OPENAI_API_KEY", "")
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         self.base_url = (
             base_url or os.getenv("OPENAI_BASE_URL", "") or DEFAULT_BASE_URL
         ).rstrip("/")
+        
+        # Auto-select model for OpenRouter if not explicitly set
+        if model:
+            self.model = model
+        elif os.getenv("OPENAI_MODEL"):
+            self.model = os.getenv("OPENAI_MODEL")
+        elif "openrouter" in self.base_url:
+            # OpenRouter expects model names like "openai/gpt-4o-mini"
+            self.model = "openai/gpt-4o-mini"
+        else:
+            self.model = "gpt-4o-mini"
+            
         if not self.api_key:
             raise LLMError("OPENAI_API_KEY is not set")
         self.chat_url = f"{self.base_url}/chat/completions"
