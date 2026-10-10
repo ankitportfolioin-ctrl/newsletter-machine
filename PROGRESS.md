@@ -16,13 +16,15 @@
 - Serverless fallbacks tested (read-only-FS persist, DB-backed preview).
 
 ### BLOCKED ON HUMAN
-- Vercel CLI here is logged in as `thedreampairco-cmyk` — user confirmed NOT
-  theirs. No deploy attempted there. User must: `vercel login` as
-  ankit.portfolio.in@gmail.com (or dashboard import), set env vars below,
-  deploy, open `/health` + `/dashboard?token=...`.
-- Vercel env vars (all scopes, values shared privately — never committed):
-  `DATABASE_URL` = Supabase pooler URL (`postgresql+psycopg://`, `%23` for `#`);
-  `API_TOKEN` = fresh generated token (shared privately); `LLM_PROVIDER=stub`.
+- RESOLVED 2026-10-10: user switched Vercel CLI to `ankitportfolioin-4403`.
+- Vercel DEPLOYED: project `ankitportfolioin-4403/newsletter-machine`
+  (FastAPI auto-detected), GitHub repo connected (pushes auto-deploy),
+  production URL **https://newsletter-machine-zeta.vercel.app**.
+- Env set ×3 scopes: `DATABASE_URL` (pooler), `API_TOKEN`, `LLM_PROVIDER=stub`.
+- Live proof on production: `/health` → ok; `/niches` → 2 niches created via
+  API (Supabase read+write from serverless confirmed); dashboard renders.
+- Remaining for user: nothing blocking — optionally add LLM keys + connect
+  cron/scheduler host for daily runs (serverless has no cron here).
 
 ## Deploy migration: Supabase + GitHub + Vercel (IN PROGRESS, code done 2026-10-10)
 
