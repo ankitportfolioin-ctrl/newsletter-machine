@@ -98,6 +98,19 @@ def ground_analysis(
     raw: dict[str, Any], payload: dict[str, Any]
 ) -> tuple[AnalysisResult, dict[str, int]]:
     """Validate + ground. Returns (result, dropped_counts). Raises ValidationError."""
+    # Ensure tldr is never empty (OpenRouter models sometimes return empty)
+    if not raw.get("tldr"):
+        # Try to build a fallback from top stories or items
+        fallback = []
+        for entry in payload.get("items", [])[:5]:
+            fallback.append(entry.get("title", ""))
+            if len(fallback) >= 3:
+                break
+        if fallback:
+            raw["tldr"] = fallback[:5]
+        else:
+            raw["tldr"] = ["No summary available for this edition."]
+    
     result = AnalysisResult.model_validate(raw)
     valid_keys = {entry["key"] for entry in payload.get("items", [])}
     texts = {
