@@ -186,6 +186,55 @@ list returned for audit).
   0.22), labels = top-3 terms. Summaries and momentum notes come from the
   Phase 5 LLM layer.
 
+## Deploy: Supabase + GitHub + Vercel
+
+The app runs anywhere Python runs, but the production path is
+**Supabase (Postgres) + Vercel (serverless API + dashboard)**. Local SQLite
+still works for development — the code picks the database from `DATABASE_URL`.
+
+### 1. Supabase (database) — ~5 min, manual
+
+1. Log in at supabase.com with `ankit.portfolio.in@gmail.com` → New project →
+   name `newsletter-machine`, pick the nearest region, set a strong password.
+2. Wait for provisioning → Project Settings → Database → copy the
+   **Session pooler** connection string (port `6543`, for serverless) and the
+   **Direct** string (port `5432`, for local use).
+3. Rewrite each as `postgresql+psycopg://...` (examples in `.env.example`).
+   Tables auto-create on first run — no migration step needed for a fresh DB.
+4. Optional live check: `TEST_DATABASE_URL=<pooler-url> pytest tests/test_deploy.py -v`
+
+### 2. GitHub (code) — repo `newsletter-machine`, public
+
+Push this directory (already `git init` + committed locally, secrets excluded
+by `.gitignore` — verify with `git status` before pushing):
+
+```powershell
+gh auth login          # one-time, browser flow as ankit.portfolio.in@gmail.com
+gh repo create newsletter-machine --public --source=. --push
+```
+
+### 3. Vercel (hosting) — manual import + env vars
+
+1. Log in at vercel.com with `ankit.portfolio.in@gmail.com` → Add New →
+   Project → Import the `newsletter-machine` repo → Deploy (detection is
+   automatic: `api/index.py` + `requirements.txt`).
+2. Before/at deploy, add Environment Variables (all scopes):
+   - `DATABASE_URL` = Supabase **pooler** URL (`postgresql+psycopg://...:6543/...`) — REQUIRED
+   - `API_TOKEN` = a long random string (used by dashboard `?token=`) — REQUIRED
+   - `LLM_PROVIDER=stub` to start (add `ANTHROPIC_API_KEY` later for real analysis)
+3. Redeploy after adding vars. Open `/health`, then `/dashboard?token=...`.
+
+### Serverless notes (read before relying on it)
+
+- Vercel's filesystem is read-only: newsletter file writes are skipped with a
+  warning, the analysis stays in Supabase, and preview re-renders HTML from
+  the DB. `OUTPUT_DIR` files only persist on long-lived hosts.
+- `schedule`/APScheduler does not run on serverless. Daily runs: keep
+  `newsletter-machine schedule` on any always-on machine, or trigger
+  `POST /runs` + `build` from an external cron.
+- Cold starts create tables if missing (`create_all`), so the first request
+  after deploy may take a few seconds.
+
 ## Troubleshooting
 
 - `Config file not found`: check `NICHES_YAML`/`SOURCES_YAML`/`NEWSLETTER_YAML` or run from repo root.
@@ -198,7 +247,6 @@ list returned for audit).
 - Docker daemon not running: `docker build`/`up` need Docker Desktop/Engine; everything else runs natively via `uv`.
 
 ## Environment reference (`.env`, see `.env.example`)
-
 | Variable | Default | Purpose |
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./newsletter_machine.db` | SQLite file or Postgres URL (same code path) |
