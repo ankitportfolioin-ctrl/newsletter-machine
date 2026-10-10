@@ -224,3 +224,45 @@ def test_dashboard_niche_form_and_trigger(client: TestClient) -> None:
     deleted = client.post("/dashboard/niches/web/delete?token=" + TOKEN)
     assert deleted.status_code in (200, 303)
     assert client.get("/niches/web", headers=HEADERS).status_code == 404
+
+
+def test_trigger_build_renders_newsletter(client: TestClient) -> None:
+    from datetime import UTC, datetime
+
+    from newsletter_machine.api.deps import session_factory_for
+    from newsletter_machine.config import get_settings
+    from newsletter_machine.db.models import Item, Newsletter
+
+    factory = session_factory_for(get_settings().database_url)
+    with factory() as session:
+        session.add(
+            Item(
+                platform="blogs",
+                external_id="b1",
+                url="https://example.com/b1",
+                canonical_url="https://example.com/b1",
+                title="Build trigger story",
+                text="Enough body words here to analyze properly in this test run.",
+                published_at=datetime.now(UTC),
+                niche_id="n1",
+            )
+        )
+        session.commit()
+    resp = client.post(
+        "/newsletters/build",
+        json={"niche": "n1", "date": "2026-10-10", "since_hours": 8760},
+        headers=HEADERS,
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["date"] == "2026-10-10"
+    assert body["built"][0]["niche_id"] == "n1"
+    assert body["built"][0]["html_path"].endswith("newsletter.html")
+    with factory() as session:
+        assert session.query(Newsletter).filter_by(niche_id="n1").count() == 1
+    assert (
+        client.post("/newsletters/build", json={"niche": "ghost"}, headers=HEADERS).status_code
+        == 404
+    )
+    bad_date = client.post("/newsletters/build", json={"date": "yesterday"}, headers=HEADERS)
+    assert bad_date.status_code == 400

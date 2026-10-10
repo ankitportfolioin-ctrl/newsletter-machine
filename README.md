@@ -120,10 +120,15 @@ uv run newsletter-machine serve --port 8000
 # JSON API:  /health (open) + everything else needs the token:
 #   X-API-Token: <API_TOKEN>  (or Authorization: Bearer, or ?token=)
 #   GET/POST/PATCH/DELETE /niches · GET /sources · GET/POST /runs
-#   GET /newsletters · GET /newsletters/{id}/preview
+#   GET /newsletters · POST /newsletters/build · GET /newsletters/{id}/preview
 #   POST /feedback (JSON) · GET /feedback?...&signal=up (email links) · GET /feedback/stats
 # Dashboard: /dashboard (same token, ?token= works for browsers)
 ```
+
+Daily automation runs itself via `.github/workflows/daily.yml` (collect +
+build against the deployed app at 06:00 UTC). It needs two repo secrets
+(Settings → Secrets → Actions): `APP_URL` (production URL) and `API_TOKEN`.
+Run any time by hand from the Actions tab (workflow_dispatch).
 
 Auth is a single shared secret (`API_TOKEN` in `.env`) — fine for localhost
 and small teams behind TLS, not for hostile exposure. Sources are read-only

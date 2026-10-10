@@ -1,14 +1,17 @@
-"""Newsletter archive + HTML preview (reads the stored render files)."""
+"""Newsletter archive + HTML preview + build trigger."""
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from newsletter_machine.api.deps import db_session, require_token
+from newsletter_machine.api.deps import current_settings, db_session, require_token
+from newsletter_machine.config import Settings, load_newsletter, load_niches
 from newsletter_machine.db.models import Newsletter as NewsletterRow
 
 router = APIRouter(dependencies=[Depends(require_token)])
@@ -70,3 +73,62 @@ def preview_newsletter(newsletter_id: int, session: Session = Depends(db_session
         return HTMLResponse(content=render_html(content))
     except Exception as e:  # noqa: BLE001 - no file and no renderable analysis
         raise HTTPException(status_code=404, detail=f"no preview available: {e}") from e
+
+
+class BuildTrigger(BaseModel):
+    niche: str | None = None
+    date: str | None = None
+    since_hours: int = 168
+    limit: int = 50
+    llm: str | None = None
+
+
+@router.post("/newsletters/build", status_code=201)
+async def trigger_build(
+    body: BuildTrigger,
+    settings: Settings = Depends(current_settings),
+    session: Session = Depends(db_session),
+) -> dict:
+    """Run pipeline + analysis + render for one/all niches (powers daily automation)."""
+    from newsletter_machine.llm.base import LLMError
+    from newsletter_machine.llm.factory import get_llm_client
+    from newsletter_machine.pipeline.build_flow import build_niche_newsletter
+
+    try:
+        niches = load_niches(settings)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    if body.niche:
+        niches = [n for n in niches if n.id == body.niche]
+        if not niches:
+            raise HTTPException(status_code=404, detail=f"unknown niche {body.niche!r}")
+    date_str = body.date or datetime.now(UTC).strftime("%Y-%m-%d")
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail=f"bad date {date_str!r}, want YYYY-MM-DD"
+        ) from None
+    try:
+        client = get_llm_client(settings, override=body.llm or None)
+    except LLMError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    newsletter_cfg = load_newsletter(settings)
+    built: list[dict] = []
+    for niche_cfg in niches:
+        try:
+            built.append(
+                await build_niche_newsletter(
+                    session,
+                    settings,
+                    niche_cfg,
+                    newsletter_cfg,
+                    date_str,
+                    client,
+                    since_hours=body.since_hours,
+                    limit=body.limit,
+                )
+            )
+        except Exception as e:  # noqa: BLE001 - one niche never stops the batch
+            built.append({"niche_id": niche_cfg.id, "error": f"{type(e).__name__}: {e}"})
+    return {"date": date_str, "built": built}
