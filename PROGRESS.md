@@ -1,10 +1,26 @@
 # PROGRESS.md — Newsletter Machine
 
+## Deploy follow-up: build trigger + serverless fix (LIVE-VERIFIED 2026-10-10)
+
+- Added `POST /newsletters/build` (one/all niches, validated date, per-niche
+  isolation) + `.github/workflows/daily.yml` (06:00 UTC collect→build via API;
+  needs repo secrets `APP_URL`, `API_TOKEN`). Test added, suite green.
+- LIVE BUG found by production smoke test: `build_newsletter`'s own `mkdir`
+  bypassed the `persist_rendered` read-only fallback → OSError on serverless.
+  Fixed (mkdir ownership moved to the guarded path) + regression test;
+  pushed; auto-deploy verified: `POST /newsletters/build` returned
+  `OSError` twice on old code, then id=1 + subject on new code; preview
+  re-rendered from DB (200, subject present). Full serverless loop closed.
+- PAT lacks `workflow` scope → `.github/workflows/daily.yml` stays LOCAL
+  (untracked) until user grants scope or adds it via GitHub web UI.
+- Remaining manual items for the user: (1) workflow file into repo + secrets
+  `APP_URL`/`API_TOKEN`; (2) optional `ANTHROPIC_API_KEY` in Vercel env for
+  real analysis; (3) optional platform keys.
+
 ## Deploy migration: Supabase + GitHub + Vercel (PARTIAL 2026-10-10 — Vercel needs human)
 
 ### DONE (verified this session)
-- Supabase LIVE: pooler URL works (note: `#` in password must be `%23`-encoded).
-  `test_deploy.py` incl. real Postgres roundtrip: **4 passed**. Finding fixed:
+- Supabase LIVE: pooler URL works (note: `#` in password must be `%23`-encoded).  `test_deploy.py` incl. real Postgres roundtrip: **4 passed**. Finding fixed:
   Postgres enforces `items.niche_id` FK (SQLite doesn't) — probe test now
   creates the niche row first, mirroring `ensure_niche_row`.
 - GitHub PUSHED: `ankitportfolioin-ctrl/newsletter-machine` (public, confirmed
