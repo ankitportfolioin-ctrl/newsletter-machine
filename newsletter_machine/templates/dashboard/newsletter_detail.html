@@ -1,7 +1,28 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>{{ newsletter.subject }}</h1>
-<p class="meta">{{ newsletter.date }} · {{ newsletter.niche_id }} · {{ newsletter.status }}</p>
-<p><a href="/newsletters/{{ newsletter.id }}/preview?token={{ token }}">open raw HTML</a></p>
-<iframe class="preview" src="/newsletters/{{ newsletter.id }}/preview?token={{ token }}"></iframe>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>{{ newsletter.subject }}</h1>
+    <p class="meta">{{ newsletter.date }} · {{ newsletter.niche_id }} · 
+      <span class="badge 
+        {% if newsletter.status == 'delivered' %}badge--success
+        {% elif newsletter.status == 'built' %}badge--success
+        {% elif newsletter.status == 'draft' %}badge--warning
+        {% else %}badge--danger{% endif %}">
+      {{ newsletter.status }}
+      </span>
+    </p>
+  </div>
+  <div style="display: flex; gap: var(--space-2);">
+    <a href="/newsletters/{{ newsletter.id }}/preview?token={{ token }}" target="_blank" class="btn btn--secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/></svg>
+      Open in New Tab
+    </a>
+    <a href="/dashboard/newsletters?token={{ token }}" class="btn btn--ghost">Back</a>
+  </div>
+</div>
+
+<div style="max-width: 900px; margin: 0 auto;">
+  <iframe class="preview" src="/newsletters/{{ newsletter.id }}/preview?token={{ token }}"></iframe>
+</div>
 {% endblock %}

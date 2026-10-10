@@ -1,17 +1,56 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Newsletters</h1>
-<table>
-<tr><th>id</th><th>date</th><th>niche</th><th>subject</th><th>status</th><th></th></tr>
-{% for nl in newsletters %}
-<tr>
-<td>{{ nl.id }}</td>
-<td>{{ nl.date }}</td>
-<td><code>{{ nl.niche_id }}</code></td>
-<td>{{ nl.subject }}</td>
-<td>{{ nl.status }}</td>
-<td><a href="/dashboard/newsletters/{{ nl.id }}?token={{ token }}">preview</a></td>
-</tr>
-{% endfor %}
-</table>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Newsletters</h1>
+    <p class="meta">View and manage generated newsletters.</p>
+  </div>
+</div>
+
+{% if newsletters %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Date</th>
+        <th>Niche</th>
+        <th>Subject</th>
+        <th>Status</th>
+        <th style="width: 120px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for nl in newsletters %}
+    <tr>
+      <td><code>{{ nl.id }}</code></td>
+      <td>{{ nl.date }}</td>
+      <td><code>{{ nl.niche_id }}</code></td>
+      <td>{{ nl.subject }}</td>
+      <td>
+        <span class="badge 
+          {% if nl.status == 'delivered' %}badge--success
+          {% elif nl.status == 'built' %}badge--success
+          {% elif nl.status == 'draft' %}badge--warning
+          {% else %}badge--danger{% endif %}">
+        {{ nl.status }}
+        </span>
+      </td>
+      <td>
+        <a href="/dashboard/newsletters/{{ nl.id }}?token={{ token }}" class="btn btn--ghost btn--sm">Preview</a>
+        <a href="/newsletters/{{ nl.id }}/preview?token={{ token }}" target="_blank" class="btn btn--ghost btn--sm">Open</a>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+  <p>No newsletters yet</p>
+  <p class="meta">Run a collection and build to generate your first newsletter.</p>
+</div>
+{% endif %}
 {% endblock %}

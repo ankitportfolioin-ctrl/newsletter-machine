@@ -1,14 +1,97 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Newsletter Machine</h1>
-<div class="cards">
-<div class="card"><b>{{ counts.niches }}</b>niches</div>
-<div class="card"><b>{{ counts.items }}</b>items</div>
-<div class="card"><b>{{ counts.runs }}</b>runs</div>
-<div class="card"><b>{{ counts.newsletters }}</b>newsletters</div>
-<div class="card"><b>{{ counts.feedback }}</b>feedback votes</div>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="meta">Welcome back. Here's what's happening with your newsletters.</p>
+  </div>
 </div>
-<p>Collect from the <a href="/dashboard/runs?token={{ token }}">runs page</a>,
-build with <code>newsletter-machine build</code>, preview in
-<a href="/dashboard/newsletters?token={{ token }}">newsletters</a>.</p>
+
+<div class="card-grid">
+  <div class="stat-card">
+    <div class="stat-label">Niches</div>
+    <div class="stat-value">{{ counts.niches }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Items</div>
+    <div class="stat-value">{{ counts.items }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Runs</div>
+    <div class="stat-value">{{ counts.runs }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Newsletters</div>
+    <div class="stat-value">{{ counts.newsletters }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Feedback</div>
+    <div class="stat-value">{{ counts.feedback }}</div>
+  </div>
+</div>
+
+<div style="margin-top: var(--space-6);">
+  <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-3);">Quick Actions</h2>
+  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+    <a href="/dashboard/runs?token={{ token }}" class="btn btn--secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);"><path d="M13 2L3 14h9l-1 8 10-12h-9l11-5 12 12H12l-4 4L22 10Z"/></svg>
+      Run Collection
+    </a>
+    <a href="/dashboard/newsletters?token={{ token }}" class="btn btn--secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+      View Newsletters
+    </a>
+    <a href="/dashboard/niches?token={{ token }}" class="btn btn--secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Manage Niches
+    </a>
+    <a href="/dashboard/sources?token={{ token }}" class="btn btn--secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-2);"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>
+      Manage Sources
+    </a>
+  </div>
+</div>
+
+<div style="margin-top: var(--space-6);">
+  <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-3);">Recent Runs</h2>
+  {% if recent_runs %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Niche</th>
+          <th>Started</th>
+          <th>Finished</th>
+          <th style="width: 40%;">Items</th>
+        </thead>
+        <tbody>
+        {% for run in recent_runs %}
+        <tr>
+          <td>
+            <span class="badge 
+              {% if run.status == 'success' %}badge--success{% elif run.status == 'partial' %}badge--warning{% else %}badge--danger{% endif %}">
+              {{ run.status }}
+            </span>
+          </td>
+          <td><code>{{ run.niche_id }}</code></td>
+          <td class="meta">{{ run.started_at | datetimeformat }}</td>
+          <td class="meta">{{ run.finished_at | datetimeformat if run.finished_at else '—' }}</td>
+          <td class="meta">{{ run.inserted }} new / {{ run.skipped }} skipped</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="meta" style="margin-top: var(--space-3);"><a href="/dashboard/runs?token={{ token }}">View all runs →</a></p>
+  {% else %}
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p>No runs yet</p>
+    <a href="/dashboard/runs?token={{ token }}" class="btn btn--primary" style="margin-top: var(--space-3);">Run Collection</a>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

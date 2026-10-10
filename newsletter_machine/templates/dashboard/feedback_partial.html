@@ -1,13 +1,46 @@
-<table>
-<tr><th>signal</th><th>count</th></tr>
-{% for signal, count in stats.by_signal.items() %}
-<tr><td>{{ signal }}</td><td>{{ count }}</td></tr>
-{% endfor %}
+<table style="width: 100%; border-collapse: collapse; margin-bottom: var(--space-4);">
+  <thead>
+    <tr style="border-bottom: 2px solid var(--border);">
+      <th style="text-align: left; padding: var(--space-3) var(--space-3);">Signal</th>
+      <th style="text-align: right; padding: var(--space-3) var(--space-3);">Count</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for signal, count in stats.by_signal.items() %}
+  <tr style="border-bottom: 1px solid var(--border);">
+    <td style="padding: var(--space-3) var(--space-3);">
+      <span class="badge 
+        {% if signal == 'up' %}badge--success
+        {% elif signal == 'down' %}badge--danger
+        {% else %}badge--warning{% endif %}">
+        {{ signal }}
+      </span>
+    </td>
+    <td style="text-align: right; padding: var(--space-3) var(--space-3); font-weight: 600;">{{ count }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
 </table>
-<p class="meta">total: {{ stats.total }}</p>
-<table>
-<tr><th>newsletter</th><th>breakdown</th></tr>
-{% for nid, breakdown in stats.by_newsletter.items() %}
-<tr><td>{{ nid }}</td><td>{{ breakdown }}</td></tr>
-{% endfor %}
+
+<p class="meta" style="margin-bottom: var(--space-5);">Total: <strong>{{ stats.total }}</strong></p>
+
+{% if stats.by_newsletter %}
+<h3 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-3);">By Newsletter</h3>
+<table style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr style="border-bottom: 2px solid var(--border);">
+      <th style="text-align: left; padding: var(--space-3) var(--space-3);">Newsletter</th>
+      <th style="text-align: left; padding: var(--space-3) var(--space-3);">Breakdown</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for nid, breakdown in stats.by_newsletter.items() %}
+  <tr style="border-bottom: 1px solid var(--border);">
+    <td style="padding: var(--space-2) var(--space-3);"><code>{{ nid }}</code></td>
+    <td style="padding: var(--space-2) var(--space-3);">{{ breakdown }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
 </table>
+{% endif %}
+{% endblock %}

@@ -7,33 +7,223 @@
 <meta name="supported-color-schemes" content="light dark">
 <title>{{ n.subject }}</title>
 <style>
-body { margin: 0; padding: 0; background: #f4f4f5; color: #18181b; font-family: Arial, Helvetica, sans-serif; }
-.wrap { width: 100%; background: #f4f4f5; padding: 24px 0; }
-.card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; }
-.header { background: #18181b; color: #ffffff; padding: 24px; }
-.header h1 { margin: 0 0 4px 0; font-size: 22px; }
-.header p { margin: 0; font-size: 13px; color: #d4d4d8; }
-.preheader { display: none; max-height: 0; overflow: hidden; opacity: 0; }
-.section { padding: 20px 24px; border-top: 1px solid #e4e4e7; }
-.section h2 { margin: 0 0 12px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; color: #3f3f46; }
-.story { margin: 0 0 16px 0; }
-.story h3 { margin: 0 0 6px 0; font-size: 17px; }
-.story p { margin: 0 0 6px 0; font-size: 14px; line-height: 1.5; }
-.why { font-size: 13px; color: #52525b; }
-.badge { display: inline-block; font-size: 11px; font-weight: bold; background: #e4e4e7; color: #3f3f46; border-radius: 4px; padding: 2px 6px; margin-right: 4px; text-transform: uppercase; }
-.meta { font-size: 12px; color: #71717a; }
-a { color: #2563eb; }
-.footer { padding: 20px 24px; font-size: 12px; color: #71717a; border-top: 1px solid #e4e4e7; }
-ul.tight { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
-.quote { border-left: 3px solid #2563eb; padding-left: 12px; margin: 0 0 12px 0; font-size: 14px; }
+:root {
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --fg: #18181b;
+  --fg-muted: #71717a;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-soft: #fef2f2;
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --warning: #ea580c;
+  --warning-soft: #fff7ed;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+}
+
 @media (prefers-color-scheme: dark) {
-  body, .wrap { background: #09090b !important; color: #e4e4e7 !important; }
-  .card { background: #18181b !important; }
-  .section { border-color: #3f3f46 !important; }
-  .section h2 { color: #a1a1aa !important; }
-  .badge { background: #3f3f46 !important; color: #e4e4e7 !important; }
-  .why, .meta, .footer { color: #a1a1aa !important; }
-  a { color: #93c5fd !important; }
+  :root {
+    --bg: #09090b;
+    --bg-elevated: #18181b;
+    --fg: #fafafa;
+    --fg-muted: #a1a1aa;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-soft: #1e3a5f;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --danger-soft: #450a0a;
+    --success: #22c55e;
+    --success-soft: #052e16;
+    --warning: #f97316;
+    --warning-soft: #fff7ed;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+.wrap {
+  width: 100%;
+  background: var(--bg);
+  padding: 32px 0;
+}
+
+.card {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.header {
+  background: var(--fg);
+  color: var(--bg-elevated);
+  padding: var(--space-5);
+}
+
+.header h1 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header p {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.preheader {
+  display: none;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.section {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.section h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+}
+
+.story {
+  margin: 0 0 var(--space-4);
+}
+
+.story h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.story p {
+  margin: 0 0 var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.why {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.badge--success { background: var(--success-soft); color: var(--success); }
+.badge--warning { background: var(--warning-soft); color: var(--warning); }
+.badge--danger { background: var(--danger-soft); color: var(--danger); }
+.badge--neutral { background: var(--border); color: var(--fg-muted); }
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+ul.tight {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+li {
+  margin-bottom: var(--space-2);
+}
+
+.quote {
+  border-left: 3px solid var(--accent);
+  padding-left: var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--fg);
+}
+
+.footer {
+  padding: var(--space-4) var(--space-5);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  border-top: 1px solid var(--border);
+}
+
+@media (prefers-color-scheme: dark) {
+  .wrap { background: var(--bg) !important; color: var(--fg) !important; }
+  .card { background: var(--bg-elevated) !important; }
+  .section { border-color: var(--border) !important; }
+  .badge { background: var(--accent-soft) !important; color: var(--accent) !important; }
+  .why, .meta, .footer { color: var(--fg-muted) !important; }
+  a { color: var(--accent) !important; }
 }
 </style>
 </head>
@@ -90,7 +280,7 @@ ul.tight { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
 
 {% if 'voices' in n.enabled_sections and n.quotes %}
 <div class="section">
-<h2>Voices &amp; Hot Takes</h2>
+<h2>Voices & Hot Takes</h2>
 {% for q in n.quotes %}
 <p class="quote">“{{ q.text }}”<br><span class="meta">— {{ q.author or 'unknown' }}, <a href="{{ q.url }}">source</a></span></p>
 {% endfor %}
@@ -124,7 +314,7 @@ ul.tight { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
 
 {% if 'coverage' in n.enabled_sections %}
 <div class="section">
-<h2>Coverage &amp; Diagnostics</h2>
+<h2>Coverage & Diagnostics</h2>
 <p class="meta">{{ n.confidence_note }}</p>
 {% if n.coverage %}<p class="meta">Items analyzed — {% for platform, count in n.coverage.items() %}{{ platform }}: {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
 {% if n.diagnostics %}

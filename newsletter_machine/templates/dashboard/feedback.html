@@ -1,7 +1,13 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Feedback</h1>
-<div hx-get="/dashboard/feedback/partial?token={{ token }}" hx-trigger="every 30s" hx-swap="innerHTML">
-{% include 'feedback_partial.html' %}
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Feedback</h1>
+    <p class="meta">Monitor reader feedback on your newsletters.</p>
+  </div>
+</div>
+
+<div id="feedbackStats">
+  {% include 'feedback_partial.html' %}
 </div>
 {% endblock %}

@@ -1,26 +1,81 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Runs</h1>
-<h2>Trigger a collection run</h2>
-<form method="post" action="/dashboard/runs/trigger?token={{ token }}">
-<p><label>niche (blank = all) <input name="niche"></label>
-<label>platforms, comma-separated <input name="platforms" placeholder="blogs,reddit"></label>
-<button type="submit">run now</button></p>
-</form>
-<table>
-<tr><th>id</th><th>niche</th><th>status</th><th>finished</th><th>per-collector stats / errors</th></tr>
-{% for run in runs %}
-<tr>
-<td>{{ run.id }}</td>
-<td>{{ run.niche_id }}</td>
-<td><strong>{{ run.status }}</strong></td>
-<td class="meta">{{ run.finished_at or '—' }}</td>
-<td><pre>{{ run.stats | tojson(indent=1) }}{% if run.errors %}
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Runs</h1>
+    <p class="meta">Trigger and monitor collection runs.</p>
+  </div>
+</div>
 
+<div style="margin-bottom: var(--space-5);">
+  <h2 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-3);">Trigger Collection Run</h2>
+  <form method="post" action="/dashboard/runs/trigger?token={{ token }}" style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+      <label class="form-label" for="niche">Niche (blank = all)</label>
+      <input type="text" class="form-input" id="niche" name="niche" placeholder="e.g., ai-tools-marketers">
+    </div>
+    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+      <label class="form-label" for="platforms">Platforms (comma-separated)</label>
+      <input type="text" class="form-input" id="platforms" name="platforms" placeholder="blogs,reddit,youtube">
+    </div>
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="since_hours">Hours Back</label>
+      <input type="number" class="form-input" id="since_hours" name="since_hours" value="24" min="1" max="8760" style="width: 100px;">
+    </div>
+    <button type="submit" class="btn btn--primary">Run Collection</button>
+  </form>
+</div>
+
+{% if runs %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Niche</th>
+        <th>Status</th>
+        <th>Started</th>
+        <th>Finished</th>
+        <th style="width: 40%;">Stats / Errors</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for run in runs %}
+    <tr>
+      <td><code>{{ run.id }}</code></td>
+      <td><code>{{ run.niche_id }}</code></td>
+      <td>
+        <span class="badge 
+          {% if run.status == 'success' %}badge--success
+          {% elif run.status == 'partial' %}badge--warning
+          {% else %}badge--danger{% endif %}">
+        {{ run.status }}
+        </span>
+      </td>
+      <td class="meta">{{ run.started_at | datetimeformat if run.started_at else '—' }}</td>
+      <td class="meta">{{ run.finished_at | datetimeformat if run.finished_at else '—' }}</td>
+      <td>
+        <details style="cursor: pointer;">
+          <summary class="meta" style="cursor: pointer;">Items: {{ run.stats.items if run.stats else 0 }} · Errors: {{ run.errors|length if run.errors else 0 }}</summary>
+          <pre style="margin-top: var(--space-2); max-height: 200px; overflow: auto;">{{ run.stats | tojson(indent=1) if run.stats else '{}' }}
+{% if run.errors %}
 ERRORS:
 {% for e in run.errors %}- {{ e }}
-{% endfor %}{% endif %}</pre></td>
-</tr>
-{% endfor %}
-</table>
+{% endfor %}{% endif %}</pre>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l11-5 12 12H12l-4 4L22 10Z"/>
+  </svg>
+  <p>No runs yet</p>
+  <p class="meta">Trigger a collection run above to get started.</p>
+</div>
+{% endif %}
 {% endblock %}

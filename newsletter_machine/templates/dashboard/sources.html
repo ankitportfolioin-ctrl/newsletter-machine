@@ -1,18 +1,64 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Sources &amp; tier status</h1>
-<p class="meta">Read-only: tiers live in <code>config/sources.yaml</code>. Secrets shown as presence only.</p>
-<table>
-<tr><th>platform</th><th>enabled</th><th>configured tier</th><th>live tier</th><th>note</th><th>credentials</th></tr>
-{% for src in sources %}
-<tr>
-<td><code>{{ src.platform }}</code></td>
-<td>{{ src.enabled }}</td>
-<td>{{ src.configured_tier }}</td>
-<td>{{ src.live_tier }}</td>
-<td>{{ src.note }}</td>
-<td>{% for var, present in src.credentials_present.items() %}{{ var }}: {{ 'set' if present else '—' }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
-</tr>
-{% endfor %}
-</table>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Sources & Tier Status</h1>
+    <p class="meta">Configured in <code>config/sources.yaml</code>. Secrets shown as presence only.</p>
+  </div>
+</div>
+
+{% if sources %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Platform</th>
+        <th>Enabled</th>
+        <th>Configured Tier</th>
+        <th>Live Tier</th>
+        <th>Status</th>
+        <th>Credentials</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for src in sources %}
+    <tr>
+      <td><code>{{ src.platform }}</code></td>
+      <td>
+        <span class="badge {% if src.enabled %}badge--success{% else %}badge--neutral{% endif %}">
+          {{ src.enabled }}
+        </span>
+      </td>
+      <td><code>{{ src.configured_tier }}</code></td>
+      <td>
+        <span class="badge 
+          {% if src.live_tier == 'official_api' %}badge--success
+          {% elif src.live_tier == 'provider' %}badge--warning
+          {% elif src.live_tier == 'rss' %}badge--success
+          {% elif src.live_tier == 'manual' %}badge--neutral
+          {% else %}badge--neutral{% endif %}">
+          {{ src.live_tier }}
+        </span>
+      </td>
+      <td>{{ src.note }}</td>
+      <td>
+        {% for var, present in src.credentials_present.items() %}
+          <span class="badge badge--{{ 'success' if present else 'neutral' }}" style="margin-right: var(--space-1); margin-bottom: var(--space-1);">
+            {{ var }}: {{ 'set' if present else 'not set' }}
+          </span>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M21 12.79A9 9 0 1112 2C7 7 7 16 7 16"/></svg>
+  <p>No sources configured</p>
+  <p class="meta">Add collectors to <code>config/sources.yaml</code> and restart.</p>
+</div>
+{% endif %}
 {% endblock %}

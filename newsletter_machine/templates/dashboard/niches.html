@@ -1,22 +1,115 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>Niches</h1>
-<table>
-<tr><th>id</th><th>name</th><th>description</th><th></th></tr>
-{% for niche in niches %}
-<tr>
-<td><code>{{ niche.id }}</code></td>
-<td>{{ niche.name }}</td>
-<td>{{ niche.description }}</td>
-<td><form class="inline" method="post" action="/dashboard/niches/{{ niche.id }}/delete?token={{ token }}"><button type="submit">delete</button></form></td>
-</tr>
-{% endfor %}
-</table>
-<h2>Create / update</h2>
-<form method="post" action="/dashboard/niches?token={{ token }}">
-<p><label>id <input name="id" required></label></p>
-<p><label>name <input name="name" required></label></p>
-<p><label>description <input name="description" size="60"></label></p>
-<p><button type="submit">save</button> <span class="meta">Note: <code>init</code>/<code>collect</code> re-sync name/description from niches.yaml.</span></p>
-</form>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <div>
+    <h1>Niches</h1>
+    <p class="meta">Manage your newsletter niches and their configurations.</p>
+  </div>
+  <button class="btn btn--primary" onclick="openCreateModal()">+ New Niche</button>
+</div>
+
+{% if niches %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th style="width: 120px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for niche in niches %}
+    <tr>
+      <td><code>{{ niche.id }}</code></td>
+      <td>{{ niche.name }}</td>
+      <td class="meta">{{ niche.description or '—' }}</td>
+      <td>
+        <div style="display: flex; gap: var(--space-2);">
+          <button class="btn btn--ghost btn--sm" onclick="openEditModal('{{ niche.id }}', '{{ niche.name | escapejs }}', '{{ niche.description | escapejs }}')">Edit</button>
+          <form method="post" action="/dashboard/niches/{{ niche.id }}/delete?token={{ token }}" style="display: inline;">
+            <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Delete niche {{ niche.name }}? This cannot be undone.')">Delete</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+  </svg>
+  <p>No niches yet</p>
+  <button class="btn btn--primary" onclick="openCreateModal()">Create Your First Niche</button>
+</div>
+{% endif %}
+
+<!-- Create/Edit Modal -->
+<div id="nicheModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: var(--space-4);">
+  <div class="card" style="width: 100%; max-width: 480px; animation: slide-up 0.2s ease;">
+    <div class="card-header">
+      <h3 id="modalTitle">Create Niche</h3>
+      <button type="button" class="btn btn--ghost btn--sm" onclick="closeModal()" style="padding: var(--space-1); line-height: 1;" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="nicheForm" method="post" action="/dashboard/niches?token={{ token }}">
+      <input type="hidden" name="id" id="nicheId">
+      <div class="form-group">
+        <label class="form-label" for="nicheIdInput">ID</label>
+        <input type="text" class="form-input" id="nicheIdInput" name="id" required placeholder="e.g., ai-tools-marketers">
+        <p class="meta" style="margin-top: var(--space-1);">Lowercase, hyphens only. Cannot be changed after creation.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="nicheName">Name</label>
+        <input type="text" class="form-input" id="nicheName" name="name" required placeholder="e.g., AI Tools for Marketers">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="nicheDescription">Description</label>
+        <textarea class="form-textarea" id="nicheDescription" name="description" rows="3" placeholder="Brief description of this niche..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openCreateModal() {
+  document.getElementById('nicheForm').reset();
+  document.getElementById('nicheId').value = '';
+  document.getElementById('nicheIdInput').disabled = false;
+  document.getElementById('modalTitle').textContent = 'Create Niche';
+  document.getElementById('nicheModal').style.display = 'flex';
+  document.getElementById('nicheIdInput').focus();
+}
+
+function openEditModal(id, name, description) {
+  document.getElementById('nicheId').value = id;
+  document.getElementById('nicheIdInput').value = id;
+  document.getElementById('nicheIdInput').disabled = true;
+  document.getElementById('nicheName').value = name;
+  document.getElementById('nicheDescription').value = description;
+  document.getElementById('modalTitle').textContent = 'Edit Niche';
+  document.getElementById('nicheModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('nicheModal').style.display = 'none';
+}
+
+document.getElementById('nicheModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
 {% endblock %}
