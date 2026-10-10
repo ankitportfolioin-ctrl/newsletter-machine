@@ -1,5 +1,36 @@
 # PROGRESS.md — Newsletter Machine
 
+## Deploy migration: Supabase + GitHub + Vercel (IN PROGRESS, code done 2026-10-10)
+
+### Code changes (done, verified locally)
+- `psycopg[binary]` dependency (engine creation against a postgres URL proven
+  offline); `.env.example` documents pooler (`:6543`) vs direct (`:5432`) URLs
+  with the required `postgresql+psycopg://` prefix; SQLite default untouched.
+- Vercel: root `api/index.py` re-export (verified identical object),
+  minimal `vercel.json`, generated `requirements.txt` (193 lines, psycopg
+  included), `.python-version` 3.12, `[tool.vercel] entrypoint` backup.
+- Serverless hardening: file writes degrade to DB-only with warning (tested);
+  preview re-renders from stored analysis when files are absent (tested).
+- Tests: `test_deploy.py` (entrypoint identity, read-only-FS persist,
+  DB-backed preview, Postgres roundtrip gated on `TEST_DATABASE_URL`).
+- Local git: `init` + 2 commits, secrets excluded (`.env`/`*.db`/venv absent
+  from the tree — verified before each commit).
+
+### Done in this session
+- `uv run pytest -q` → **126 passed, 4 skipped** (3 key-gated + Postgres).
+- `uv run ruff check .` → clean.
+
+### WAITING ON HUMAN (manual steps, in order)
+1. **Supabase**: create project as `ankit.portfolio.in@gmail.com`, copy the
+   session-pooler URL → run `TEST_DATABASE_URL=<url> pytest tests/test_deploy.py`
+   (or hand me the URL and I'll run it — prefer pooler URL; don't commit it).
+2. **GitHub**: `gh auth login` (browser, same account) → I push (repo
+   `newsletter-machine`, public, already committed locally). Alternative: paste
+   a fine-grained PAT and I'll push via git immediately.
+3. **Vercel**: import the repo, set `DATABASE_URL` (pooler) + `API_TOKEN` (+
+   optional LLM keys), deploy, open `/health` and `/dashboard?token=...`.
+   Full step-by-step now lives in README "Deploy: Supabase + GitHub + Vercel".
+
 ## Phase 8 — Final audit (COMPLETE, verified 2026-10-10)
 
 ### Audit runs (real output summary)
