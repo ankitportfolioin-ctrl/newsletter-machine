@@ -136,6 +136,12 @@ def test_postgres_roundtrip() -> None:
     Base.metadata.create_all(bind=engine)
     session = make_session_factory(engine)()
     try:
+        from newsletter_machine.db.models import Niche
+
+        # Postgres enforces the items.niche_id FK (SQLite does not) — mirror the
+        # app, which always ensures the niche row first (see ensure_niche_row).
+        session.add(Niche(id="probe", name="Probe", description="", config_json={}))
+        session.commit()
         row = Item(
             platform="postgres-probe",
             external_id="p1",
@@ -148,6 +154,7 @@ def test_postgres_roundtrip() -> None:
         assert session.query(Newsletter).count() >= 0
     finally:
         session.query(Item).filter_by(platform="postgres-probe").delete()
+        session.query(Niche).filter_by(id="probe").delete()
         session.commit()
         session.close()
         engine.dispose()
