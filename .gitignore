@@ -11,3 +11,4 @@ output/newsletters/*/
 dist/
 build/
 *.egg-info/
+.vercel/
