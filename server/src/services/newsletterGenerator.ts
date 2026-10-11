@@ -6,12 +6,19 @@ dotenv.config();
 let openai: OpenAI | null = null;
 
 function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
+    throw new Error('OpenRouter API key not configured');
   }
   if (!openai) {
-    openai = new OpenAI({ apiKey });
+    openai = new OpenAI({
+      apiKey,
+      baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+        'X-Title': 'Newsletter Machine',
+      },
+    });
   }
   return openai;
 }
@@ -31,8 +38,8 @@ export class NewsletterGenerator {
     items: CollectedItem[],
     date: string
   ): Promise<any> {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
+    if (!process.env.OPENROUTER_API_KEY && !process.env.OPENAI_API_KEY) {
+      throw new Error('OpenRouter API key not configured');
     }
 
     // Sort items by score and recency
@@ -67,7 +74,7 @@ Return ONLY valid JSON with this structure. Make it engaging, insightful, and va
 
     try {
       const completion = await getOpenAIClient().chat.completions.create({
-        model: 'gpt-4-turbo-preview',
+        model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
         messages: [
           {
             role: 'system',

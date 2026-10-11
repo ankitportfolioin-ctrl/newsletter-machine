@@ -24,3 +24,7 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://newsletter-machine-zeta.vercel.app
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
