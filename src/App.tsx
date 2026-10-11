@@ -11,6 +11,7 @@ import NewsletterPreview from './pages/NewsletterPreview';
 import Feedback from './pages/Feedback';
 import Settings from './pages/Settings';
 import AlternativeSources from './pages/AlternativeSources';
+import LiveScrapeDemo from './pages/LiveScrapeDemo';
 import NotFound from './pages/NotFound';
 import { apiClient } from './services/apiClient';
 
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/alternative-sources" element={<ProtectedRoute><AlternativeSources /></ProtectedRoute>} />
+        <Route path="/live-scrape" element={<ProtectedRoute><LiveScrapeDemo /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HashRouter>

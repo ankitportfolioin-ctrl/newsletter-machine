@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/niches', icon: Target, label: 'Niches' },
   { to: '/sources', icon: Rss, label: 'Sources' },
   { to: '/alternative-sources', icon: TrendingUp, label: 'Alternative Sources' },
+  { to: '/live-scrape', icon: Zap, label: 'Live Scrape Demo' },
   { to: '/runs', icon: History, label: 'Run History' },
   { to: '/archive', icon: Archive, label: 'Newsletter Archive' },
   { to: '/feedback', icon: ThumbsUp, label: 'Feedback Stats' },
