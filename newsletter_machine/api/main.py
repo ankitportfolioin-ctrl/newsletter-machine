@@ -99,14 +99,20 @@ def create_app() -> FastAPI:
                 "form-action 'self'"
             )
         elif is_docs:
-            # Docs (Swagger/ReDoc) need external resources from jsdelivr and fastapi.tiangolo.com
+            # Docs (Swagger/ReDoc) need external resources from jsdelivr, fastapi.tiangolo.com, fonts.googleapis.com
+            is_redoc = request.url.path == "/redoc"
+            style_src = "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" + (" https://fonts.googleapis.com" if is_redoc else "")
+            img_src = "img-src 'self' data: https://fastapi.tiangolo.com" + (" https://cdn.redoc.ly" if is_redoc else "")
+            font_src = "font-src 'self' https://cdn.jsdelivr.net" + (" https://fonts.gstatic.com" if is_redoc else "")
+            worker_src = "worker-src 'self' blob:" if is_redoc else "connect-src 'self'"
+            
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                "img-src 'self' data: https://fastapi.tiangolo.com; "
-                "font-src 'self' https://cdn.jsdelivr.net; "
-                "connect-src 'self'; "
+                + style_src + "; "
+                + img_src + "; "
+                + font_src + "; "
+                + worker_src + "; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
                 "form-action 'self'"
