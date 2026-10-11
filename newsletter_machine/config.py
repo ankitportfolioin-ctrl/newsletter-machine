@@ -7,12 +7,13 @@ All YAML paths are configurable via env vars so tests can point at fixtures.
 from __future__ import annotations
 
 import os
+import secrets
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 TierName = Literal["official_api", "rss", "provider", "manual", "disabled"]
@@ -94,7 +95,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str = "sqlite:///./newsletter_machine.db"
-    api_token: str = "change-me-dev-token"
+    api_token: str = ""
 
     niches_yaml: str = "config/niches.yaml"
     sources_yaml: str = "config/sources.yaml"
@@ -128,6 +129,30 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     resend_api_key: str = ""
     delivery_webhook_url: str = ""
+
+    @field_validator("api_token", mode="before")
+    @classmethod
+    def _validate_api_token(cls, v: str) -> str:
+        if not v:
+            # Generate a secure token for development
+            token = secrets.token_urlsafe(32)
+            print(f"WARNING: No API_TOKEN set. Generated temporary token: {token}")
+            print("Set API_TOKEN in .env for production use.")
+            return token
+        if v == "change-me-dev-token":
+            # Check if we're in a production-like environment
+            env = os.getenv("ENVIRONMENT", "development").lower()
+            if env == "production":
+                raise ValueError(
+                    "Default token 'change-me-dev-token' not allowed in production. "
+                    "Set a secure API_TOKEN."
+                )
+            print("WARNING: Using default development token. Set API_TOKEN in .env for production.")
+        return v
+
+    @property
+    def is_production(self) -> bool:
+        return os.getenv("ENVIRONMENT", "development").lower() == "production"
 
 
 @lru_cache(maxsize=1)

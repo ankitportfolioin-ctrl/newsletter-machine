@@ -31,7 +31,7 @@ send:
 	uv run newsletter-machine send --newsletter $(ID) || newsletter-machine send --newsletter $(ID)
 
 serve:
-	uv run uvicorn newsletter_machine.api.main:app --reload || uvicorn newsletter_machine.api.main:app --reload
+	uv run python -m newsletter_machine.api.main || python -m newsletter_machine.api.main
 
 schedule:
 	uv run newsletter-machine schedule || newsletter-machine schedule

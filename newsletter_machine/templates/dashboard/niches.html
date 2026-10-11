@@ -27,9 +27,9 @@
       <td class="meta">{{ niche.description or '—' }}</td>
       <td>
         <div style="display: flex; gap: var(--space-2);">
-          <button class="btn btn--ghost btn--sm" onclick="openEditModal('{{ niche.id }}', '{{ niche.name | escapejs }}', '{{ niche.description | escapejs }}')">Edit</button>
+          <button class="btn btn--ghost btn--sm" onclick="openEditModal({{ niche.id | tojson }}, {{ niche.name | tojson }}, {{ niche.description | tojson }})">Edit</button>
           <form method="post" action="/dashboard/niches/{{ niche.id }}/delete?token={{ token }}" style="display: inline;">
-            <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Delete niche {{ niche.name }}? This cannot be undone.')">Delete</button>
+            <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Delete niche ' + {{ niche.name | tojson }} + '? This cannot be undone.')">Delete</button>
           </form>
         </div>
       </td>

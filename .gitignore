@@ -13,3 +13,6 @@ build/
 *.egg-info/
 .vercel/
 .env.local
+server.log
+.playwright-mcp/
+qa/

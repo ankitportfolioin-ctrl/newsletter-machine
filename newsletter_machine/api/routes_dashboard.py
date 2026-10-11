@@ -9,6 +9,7 @@ stats box with polling.
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -60,7 +61,8 @@ def _escapejs(value: str) -> str:
 
 router = APIRouter(dependencies=[Depends(require_token)])
 TEMPLATES = Environment(
-    loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates" / "dashboard"))
+    loader=FileSystemLoader(str(Path(__file__).parent.parent / "templates" / "dashboard")),
+    autoescape=True,
 )
 TEMPLATES.filters["datetimeformat"] = _datetimeformat
 TEMPLATES.filters["escapejs"] = _escapejs
@@ -114,16 +116,34 @@ def dashboard_niche_upsert(
     description: str = Form(""),
     session: Session = Depends(db_session),
 ) -> RedirectResponse:
-    row = session.get(NicheRow, id.strip())
+    id = id.strip()
+    name = name.strip()
+    description = description.strip()
+
+    # Server-side validation
+    if not id:
+        raise HTTPException(status_code=422, detail="Niche ID is required")
+    if not name:
+        raise HTTPException(status_code=422, detail="Niche name is required")
+    if len(name) > 200:
+        raise HTTPException(status_code=422, detail="Niche name must be 200 characters or less")
+    # Validate ID format: lowercase, hyphens, alphanumeric only
+    if not re.match(r"^[a-z0-9-]+$", id):
+        raise HTTPException(
+            status_code=422,
+            detail="Niche ID must be lowercase alphanumeric with hyphens only",
+        )
+
+    row = session.get(NicheRow, id)
     if row is None:
         session.add(
             NicheRow(
-                id=id.strip(), name=name.strip(), description=description.strip(), config_json={}
+                id=id, name=name, description=description, config_json={}
             )
         )
     else:
-        row.name = name.strip()
-        row.description = description.strip()
+        row.name = name
+        row.description = description
     session.commit()
     token = _token(request)
     return RedirectResponse(url=f"/dashboard/niches?token={token}", status_code=303)
@@ -147,14 +167,14 @@ def dashboard_niche_delete(
 def dashboard_sources(
     request: Request, settings: Settings = Depends(current_settings)
 ) -> HTMLResponse:
-    return _render("sources.html", request=request, token=_token(request), sources=list_sources(settings)["sources"])
+    srcs = list_sources(settings)["sources"]
+    return _render("sources.html", request=request, token=_token(request), sources=srcs)
 
 
 @router.get("/dashboard/runs", response_class=HTMLResponse)
 def dashboard_runs(request: Request, session: Session = Depends(db_session)) -> HTMLResponse:
-    return _render(
-        "runs.html", request=request, token=_token(request), runs=list_runs(limit=20, session=session)["runs"]
-    )
+    runs_data = list_runs(limit=20, session=session)["runs"]
+    return _render("runs.html", request=request, token=_token(request), runs=runs_data)
 
 
 @router.post("/dashboard/runs/trigger")
