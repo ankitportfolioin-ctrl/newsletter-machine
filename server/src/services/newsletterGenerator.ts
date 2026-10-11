@@ -3,9 +3,18 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
+  if (!openai) {
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
 
 interface CollectedItem {
   platform: string;
@@ -57,7 +66,7 @@ Generate a newsletter with these sections (return as JSON):
 Return ONLY valid JSON with this structure. Make it engaging, insightful, and valuable for professionals in this niche.`;
 
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: 'gpt-4-turbo-preview',
         messages: [
           {
