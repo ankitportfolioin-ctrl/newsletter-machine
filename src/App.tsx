@@ -7,6 +7,7 @@ import AuthCallback from './pages/AuthCallback';
 import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 import { supabase } from './lib/supabase';
+import { apiClient } from './services/apiClient';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -26,10 +27,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
+      apiClient.setToken(session?.access_token ?? null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
+      apiClient.setToken(session?.access_token ?? null);
     });
 
     return () => subscription.unsubscribe();

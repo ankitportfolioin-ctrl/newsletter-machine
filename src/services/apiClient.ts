@@ -9,6 +9,16 @@ class ApiClient {
     this.token = localStorage.getItem('auth_token');
   }
 
+  setToken(token: string | null): void {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
