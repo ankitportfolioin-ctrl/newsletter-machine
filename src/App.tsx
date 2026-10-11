@@ -10,6 +10,7 @@ import Archive from './pages/Archive';
 import NewsletterPreview from './pages/NewsletterPreview';
 import Feedback from './pages/Feedback';
 import Settings from './pages/Settings';
+import AlternativeSources from './pages/AlternativeSources';
 import NotFound from './pages/NotFound';
 import { apiClient } from './services/apiClient';
 
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/newsletter/:id" element={<ProtectedRoute><NewsletterPreview /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/alternative-sources" element={<ProtectedRoute><AlternativeSources /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HashRouter>

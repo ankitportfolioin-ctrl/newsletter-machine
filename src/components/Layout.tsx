@@ -14,6 +14,7 @@ import {
   Newspaper,
   Sun,
   Moon,
+  TrendingUp,
 } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/niches', icon: Target, label: 'Niches' },
   { to: '/sources', icon: Rss, label: 'Sources' },
+  { to: '/alternative-sources', icon: TrendingUp, label: 'Alternative Sources' },
   { to: '/runs', icon: History, label: 'Run History' },
   { to: '/archive', icon: Archive, label: 'Newsletter Archive' },
   { to: '/feedback', icon: ThumbsUp, label: 'Feedback Stats' },

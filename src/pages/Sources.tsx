@@ -387,6 +387,18 @@ export default function Sources() {
             <span><strong>Skip restricted platforms</strong> — LinkedIn, Instagram, Facebook, and X have limited or paid API access.</span>
           </li>
         </ul>
+        <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
+            <strong>Want trending content from restricted platforms?</strong> We've compiled legitimate alternatives!
+          </p>
+          <a
+            href="/alternative-sources"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
+          >
+            View Alternative Sources
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
     </div>
   );
