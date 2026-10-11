@@ -139,9 +139,11 @@ def create_app() -> FastAPI:
     async def redoc_ui(request: Request) -> str:
         return get_redoc_html(openapi_url="/openapi.json", title="Newsletter Machine API")
 
-    @app.get("/openapi.json", dependencies=[Depends(require_token)], include_in_schema=False)
+    @app.get("/openapi.json", include_in_schema=False)
     @limiter.limit("10/minute")
     async def openapi_json(request: Request) -> dict:
+        # Allow public access to openapi.json for Swagger UI to fetch it
+        # The schema itself is not sensitive; protect the UI endpoints instead
         return get_openapi(title="Newsletter Machine", version=__version__, routes=app.routes)
 
     app.include_router(routes_niches.router, tags=["niches"])
