@@ -1,39 +1,56 @@
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database';
+import { configureSecurity, errorHandler, notFoundHandler, requestLogger, sanitizeInput } from './middleware/security';
 import authRoutes from './routes/auth';
 import nichesRoutes from './routes/niches';
 import runsRoutes from './routes/runs';
 import newslettersRoutes from './routes/newsletters';
 import sourcesRoutes from './routes/sources';
+import legalRoutes from './routes/legal';
 
-dotenv.config();
+// Load environment-specific config
+const env = process.env.NODE_ENV || 'development';
+dotenv.config({ path: `.env.${env}` });
+dotenv.config(); // Fallback to .env
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-}));
-app.use(express.json({ limit: '10mb' }));
+// Request logging
+app.use(requestLogger);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-});
-app.use('/api/', limiter);
+// Security middleware
+configureSecurity(app);
+
+// Body parsing with size limit
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization
+app.use(sanitizeInput);
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    const { checkDatabaseHealth } = await import('./config/database');
+    const dbHealth = await checkDatabaseHealth();
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: dbHealth,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 // API routes
@@ -42,12 +59,13 @@ app.use('/api/niches', nichesRoutes);
 app.use('/api/runs', runsRoutes);
 app.use('/api/newsletters', newslettersRoutes);
 app.use('/api/sources', sourcesRoutes);
+app.use('/api/legal', legalRoutes);
+
+// 404 handler
+app.use(notFoundHandler);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+app.use(errorHandler);
 
 // Start server
 async function start() {
@@ -57,10 +75,36 @@ async function start() {
     console.log('Database initialized');
 
     // Start server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
     });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n${signal} received. Starting graceful shutdown...`);
+      
+      server.close(async () => {
+        console.log('HTTP server closed');
+        
+        const { closeDatabase } = await import('./config/database');
+        await closeDatabase();
+        
+        console.log('Graceful shutdown complete');
+        process.exit(0);
+      });
+
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
