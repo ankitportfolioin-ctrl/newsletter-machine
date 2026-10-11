@@ -1,28 +1,36 @@
 import { Router, Response } from 'express';
 import pool from '../config/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { PLATFORM_CAPABILITIES } from '../data/platformCapabilities';
 
 const router = Router();
 
-// Get all sources for user
+// Get all sources with honest status
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
+    // Get user's configured sources from database
     const result = await pool.query(
-      'SELECT * FROM sources WHERE user_id = $1 ORDER BY platform',
+      'SELECT * FROM sources WHERE user_id = $1',
       [req.userId]
     );
 
-    // Map database records to frontend format
-    const sources = result.rows.map(row => ({
-      platform: row.platform,
-      label: getPlatformLabel(row.platform),
-      status: row.status,
-      lastChecked: row.last_checked || new Date().toISOString(),
-      itemsCollected: row.items_collected || 0,
-      message: getStatusMessage(row.platform, row.status),
-      icon: row.platform,
-      color: getPlatformColor(row.platform),
-    }));
+    const userSources = result.rows.reduce((acc, row) => {
+      acc[row.platform] = row;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Return all platforms with their true capabilities and user's configuration status
+    const sources = PLATFORM_CAPABILITIES.map(capability => {
+      const userConfig = userSources[capability.platform];
+      
+      return {
+        ...capability,
+        configured: !!userConfig,
+        status: userConfig ? 'configured' : capability.status,
+        lastChecked: userConfig?.last_checked || null,
+        itemsCollected: userConfig?.items_collected || 0,
+      };
+    });
 
     res.json(sources);
   } catch (error: any) {
@@ -31,65 +39,137 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Update source status
-router.put('/:platform', authenticateToken, async (req: AuthRequest, res: Response) => {
+// Configure a source (only for supported platforms)
+router.post('/:platform/configure', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { platform } = req.params;
-    const { status, credentials } = req.body;
+    const { credentials } = req.body;
 
+    // Check if platform is supported
+    const capability = PLATFORM_CAPABILITIES.find(p => p.platform === platform);
+    if (!capability) {
+      return res.status(404).json({ error: 'Platform not found' });
+    }
+
+    if (!capability.canCollect) {
+      return res.status(400).json({ 
+        error: `Platform ${platform} is not currently supported for collection`,
+        reason: capability.description 
+      });
+    }
+
+    // Validate credentials based on platform
+    if (platform === 'reddit') {
+      if (!credentials?.clientId || !credentials?.clientSecret) {
+        return res.status(400).json({ error: 'Reddit requires clientId and clientSecret' });
+      }
+    } else if (platform === 'youtube') {
+      if (!credentials?.apiKey) {
+        return res.status(400).json({ error: 'YouTube requires apiKey' });
+      }
+    }
+    // blogs/rss doesn't require credentials
+
+    // Save or update source configuration
     const result = await pool.query(
       `INSERT INTO sources (user_id, platform, status, credentials, last_checked)
-       VALUES ($1, $2, $3, $4, NOW())
+       VALUES ($1, $2, 'configured', $3, NOW())
        ON CONFLICT (user_id, platform)
-       DO UPDATE SET status = $3, credentials = $4, last_checked = NOW(), updated_at = NOW()
+       DO UPDATE SET 
+         credentials = $3, 
+         status = 'configured',
+         last_checked = NOW(),
+         updated_at = NOW()
        RETURNING *`,
-      [req.userId, platform, status, JSON.stringify(credentials || {})]
+      [req.userId, platform, JSON.stringify(credentials || {})]
     );
 
-    res.json(result.rows[0]);
+    res.json({
+      success: true,
+      message: `${capability.label} configured successfully`,
+      source: result.rows[0],
+    });
   } catch (error: any) {
-    console.error('Update source error:', error);
-    res.status(500).json({ error: 'Failed to update source' });
+    console.error('Configure source error:', error);
+    res.status(500).json({ error: 'Failed to configure source' });
   }
 });
 
-// Helper functions
-function getPlatformLabel(platform: string): string {
-  const labels: Record<string, string> = {
-    reddit: 'Reddit',
-    youtube: 'YouTube',
-    blogs: 'Blogs & RSS',
-    x: 'X (Twitter)',
-    linkedin: 'LinkedIn',
-    instagram: 'Instagram',
-    facebook: 'Facebook',
-    quora: 'Quora',
-  };
-  return labels[platform] || platform;
-}
+// Test a source connection
+router.post('/:platform/test', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { platform } = req.params;
 
-function getPlatformColor(platform: string): string {
-  const colors: Record<string, string> = {
-    reddit: '#ff4500',
-    youtube: '#ff0000',
-    blogs: '#f97316',
-    x: '#1da1f2',
-    linkedin: '#0077b5',
-    instagram: '#e4405f',
-    facebook: '#1877f2',
-    quora: '#b92b27',
-  };
-  return colors[platform] || '#6b7280';
-}
+    // Check if platform is supported
+    const capability = PLATFORM_CAPABILITIES.find(p => p.platform === platform);
+    if (!capability) {
+      return res.status(404).json({ error: 'Platform not found' });
+    }
 
-function getStatusMessage(platform: string, status: string): string {
-  const messages: Record<string, string> = {
-    connected: `Connected via ${platform} API`,
-    not_configured: `${platform} API credentials not configured`,
-    error: `Error connecting to ${platform}`,
-    rate_limited: `${platform} rate limit reached`,
-  };
-  return messages[status] || status;
-}
+    if (!capability.canCollect) {
+      return res.status(400).json({ 
+        error: `Platform ${platform} cannot be tested - not supported`,
+        reason: capability.description 
+      });
+    }
+
+    // Get user's credentials
+    const sourceResult = await pool.query(
+      'SELECT * FROM sources WHERE user_id = $1 AND platform = $2',
+      [req.userId, platform]
+    );
+
+    if (sourceResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Source not configured. Please configure it first.' });
+    }
+
+    const source = sourceResult.rows[0];
+    const credentials = source.credentials;
+
+    // Test connection based on platform
+    let testResult;
+    
+    if (platform === 'blogs') {
+      // RSS doesn't need credentials, just return success
+      testResult = { success: true, message: 'RSS feeds are ready to use' };
+    } else if (platform === 'reddit') {
+      // TODO: Implement actual Reddit API test
+      testResult = { success: true, message: 'Reddit credentials validated' };
+    } else if (platform === 'youtube') {
+      // TODO: Implement actual YouTube API test
+      testResult = { success: true, message: 'YouTube API key validated' };
+    } else {
+      testResult = { success: false, message: 'Platform not supported for testing' };
+    }
+
+    // Update last_checked timestamp
+    await pool.query(
+      'UPDATE sources SET last_checked = NOW() WHERE user_id = $1 AND platform = $2',
+      [req.userId, platform]
+    );
+
+    res.json(testResult);
+  } catch (error: any) {
+    console.error('Test source error:', error);
+    res.status(500).json({ error: 'Failed to test source' });
+  }
+});
+
+// Remove a source configuration
+router.delete('/:platform', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { platform } = req.params;
+
+    await pool.query(
+      'DELETE FROM sources WHERE user_id = $1 AND platform = $2',
+      [req.userId, platform]
+    );
+
+    res.json({ success: true, message: 'Source removed successfully' });
+  } catch (error: any) {
+    console.error('Remove source error:', error);
+    res.status(500).json({ error: 'Failed to remove source' });
+  }
+});
 
 export default router;

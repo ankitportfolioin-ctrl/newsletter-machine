@@ -1,12 +1,23 @@
-export type Platform =
-  | 'reddit'
-  | 'quora'
-  | 'linkedin'
-  | 'instagram'
-  | 'x'
-  | 'facebook'
-  | 'blogs'
-  | 'youtube';
+// Platforms that actually work with real API access
+export type WorkingPlatform = 'reddit' | 'youtube' | 'blogs';
+
+// Platforms with limited or no public API access
+export type LimitedPlatform = 'x' | 'linkedin' | 'instagram' | 'facebook' | 'quora';
+
+export type Platform = WorkingPlatform | LimitedPlatform;
+
+export interface PlatformCapability {
+  platform: Platform;
+  label: string;
+  status: 'fully_supported' | 'paid_only' | 'restricted' | 'no_api' | 'coming_soon';
+  description: string;
+  requirements: string[];
+  cost: string;
+  setupDifficulty: 'easy' | 'medium' | 'hard' | 'expert';
+  icon: string;
+  color: string;
+  canCollect: boolean;
+}
 
 export interface Niche {
   id: string;
