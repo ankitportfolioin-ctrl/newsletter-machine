@@ -81,8 +81,11 @@ def create_app() -> FastAPI:
         # Add security headers
         for header, value in SECURITY_HEADERS.items():
             response.headers[header] = value
-        # Add CSP header (strict for API, relaxed for dashboard HTML)
-        if request.url.path.startswith("/dashboard") or request.url.path == "/":
+        # Add CSP header (relaxed for dashboard/docs, strict for API)
+        is_dashboard = request.url.path.startswith("/dashboard") or request.url.path == "/"
+        is_docs = request.url.path in ("/docs", "/redoc", "/openapi.json")
+        
+        if is_dashboard:
             # Dashboard needs inline scripts/styles for HTMX and templates
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
@@ -90,6 +93,19 @@ def create_app() -> FastAPI:
                 "style-src 'self' 'unsafe-inline'; "
                 "img-src 'self' data:; "
                 "font-src 'self'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        elif is_docs:
+            # Docs (Swagger/ReDoc) need external resources from jsdelivr and fastapi.tiangolo.com
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https://fastapi.tiangolo.com; "
+                "font-src 'self' https://cdn.jsdelivr.net; "
                 "connect-src 'self'; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
