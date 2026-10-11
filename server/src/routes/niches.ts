@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import pool from '../config/database';
+import { supabaseAdmin } from '../config/supabase';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -7,11 +7,15 @@ const router = Router();
 // Get all niches for user
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM niches WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.userId]
-    );
-    res.json(result.rows);
+    const { data, error } = await supabaseAdmin
+      .from('niches')
+      .select('*')
+      .eq('user_id', req.userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json(data || []);
   } catch (error: any) {
     console.error('Get niches error:', error);
     res.status(500).json({ error: 'Failed to get niches' });
@@ -21,16 +25,21 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 // Get single niche
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM niches WHERE id = $1 AND user_id = $2',
-      [req.params.id, req.userId]
-    );
+    const { data, error } = await supabaseAdmin
+      .from('niches')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId)
+      .single();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Niche not found' });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Niche not found' });
+      }
+      throw error;
     }
 
-    res.json(result.rows[0]);
+    res.json(data);
   } catch (error: any) {
     console.error('Get niche error:', error);
     res.status(500).json({ error: 'Failed to get niche' });
@@ -51,32 +60,34 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     }
 
     // Check for duplicate name
-    const existing = await pool.query(
-      'SELECT id FROM niches WHERE user_id = $1 AND LOWER(name) = LOWER($2)',
-      [req.userId, name]
-    );
+    const { data: existing } = await supabaseAdmin
+      .from('niches')
+      .select('id')
+      .eq('user_id', req.userId)
+      .ilike('name', name);
 
-    if (existing.rows.length > 0) {
+    if (existing && existing.length > 0) {
       return res.status(400).json({ error: 'A niche with this name already exists' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO niches (user_id, name, keywords, subreddits, blog_feeds, include_terms, exclude_terms, enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        req.userId,
+    const { data, error } = await supabaseAdmin
+      .from('niches')
+      .insert({
+        user_id: req.userId,
         name,
-        keywords || [],
-        subreddits || [],
-        blogFeeds || [],
-        includeTerms || [],
-        excludeTerms || [],
-        enabled !== undefined ? enabled : true,
-      ]
-    );
+        keywords: keywords || [],
+        subreddits: subreddits || [],
+        blog_feeds: blogFeeds || [],
+        include_terms: includeTerms || [],
+        exclude_terms: excludeTerms || [],
+        enabled: enabled !== undefined ? enabled : true
+      })
+      .select()
+      .single();
 
-    res.status(201).json(result.rows[0]);
+    if (error) throw error;
+
+    res.status(201).json(data);
   } catch (error: any) {
     console.error('Create niche error:', error);
     res.status(500).json({ error: 'Failed to create niche' });
@@ -89,31 +100,35 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     const { name, keywords, subreddits, blogFeeds, includeTerms, excludeTerms, enabled } = req.body;
 
     // Check if niche exists and belongs to user
-    const existing = await pool.query(
-      'SELECT id FROM niches WHERE id = $1 AND user_id = $2',
-      [req.params.id, req.userId]
-    );
+    const { data: existing } = await supabaseAdmin
+      .from('niches')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId);
 
-    if (existing.rows.length === 0) {
+    if (!existing || existing.length === 0) {
       return res.status(404).json({ error: 'Niche not found' });
     }
 
-    const result = await pool.query(
-      `UPDATE niches SET
-        name = COALESCE($1, name),
-        keywords = COALESCE($2, keywords),
-        subreddits = COALESCE($3, subreddits),
-        blog_feeds = COALESCE($4, blog_feeds),
-        include_terms = COALESCE($5, include_terms),
-        exclude_terms = COALESCE($6, exclude_terms),
-        enabled = COALESCE($7, enabled),
-        updated_at = NOW()
-       WHERE id = $8
-       RETURNING *`,
-      [name, keywords, subreddits, blogFeeds, includeTerms, excludeTerms, enabled, req.params.id]
-    );
+    const updates: any = { updated_at: new Date().toISOString() };
+    if (name !== undefined) updates.name = name;
+    if (keywords !== undefined) updates.keywords = keywords;
+    if (subreddits !== undefined) updates.subreddits = subreddits;
+    if (blogFeeds !== undefined) updates.blog_feeds = blogFeeds;
+    if (includeTerms !== undefined) updates.include_terms = includeTerms;
+    if (excludeTerms !== undefined) updates.exclude_terms = excludeTerms;
+    if (enabled !== undefined) updates.enabled = enabled;
 
-    res.json(result.rows[0]);
+    const { data, error } = await supabaseAdmin
+      .from('niches')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json(data);
   } catch (error: any) {
     console.error('Update niche error:', error);
     res.status(500).json({ error: 'Failed to update niche' });
@@ -123,14 +138,13 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 // Delete niche
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const result = await pool.query(
-      'DELETE FROM niches WHERE id = $1 AND user_id = $2 RETURNING id',
-      [req.params.id, req.userId]
-    );
+    const { error } = await supabaseAdmin
+      .from('niches')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Niche not found' });
-    }
+    if (error) throw error;
 
     res.json({ message: 'Niche deleted successfully' });
   } catch (error: any) {

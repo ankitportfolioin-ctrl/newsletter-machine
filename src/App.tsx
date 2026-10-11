@@ -1,10 +1,12 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, Suspense, lazy } from 'react';
+import { useEffect, Suspense, lazy, useState } from 'react';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
+import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
-import { apiClient } from './services/apiClient';
+import { supabase } from './lib/supabase';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -19,9 +21,32 @@ const AlternativeSources = lazy(() => import('./pages/AlternativeSources'));
 const LiveScrapeDemo = lazy(() => import('./pages/LiveScrapeDemo'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  if (!apiClient.isAuthenticated()) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return <Layout>{children}</Layout>;
 }
 
@@ -49,6 +74,8 @@ export default function App() {
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/niches" element={<ProtectedRoute><Niches /></ProtectedRoute>} />
             <Route path="/sources" element={<ProtectedRoute><Sources /></ProtectedRoute>} />

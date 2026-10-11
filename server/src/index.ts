@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './config/database';
+import { initializeDatabase, checkDatabaseHealth } from './config/supabase';
 import { configureSecurity, errorHandler, notFoundHandler, requestLogger, sanitizeInput } from './middleware/security';
 import authRoutes from './routes/auth';
 import nichesRoutes from './routes/niches';
@@ -33,7 +33,6 @@ app.use(sanitizeInput);
 // Health check
 app.get('/health', async (req, res) => {
   try {
-    const { checkDatabaseHealth } = await import('./config/database');
     const dbHealth = await checkDatabaseHealth();
     
     res.json({
@@ -72,13 +71,13 @@ async function start() {
   try {
     // Initialize database
     await initializeDatabase();
-    console.log('Database initialized');
+    console.log('✅ Supabase database initialized');
 
     // Start server
     const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`💚 Health check: http://localhost:${PORT}/health`);
     });
 
     // Graceful shutdown
@@ -87,10 +86,6 @@ async function start() {
       
       server.close(async () => {
         console.log('HTTP server closed');
-        
-        const { closeDatabase } = await import('./config/database');
-        await closeDatabase();
-        
         console.log('Graceful shutdown complete');
         process.exit(0);
       });
@@ -106,7 +101,7 @@ async function start() {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 }

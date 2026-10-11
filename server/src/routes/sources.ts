@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import pool from '../config/database';
+import { supabaseAdmin } from '../config/supabase';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { PLATFORM_CAPABILITIES } from '../data/platformCapabilities';
 
@@ -9,12 +9,14 @@ const router = Router();
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     // Get user's configured sources from database
-    const result = await pool.query(
-      'SELECT * FROM sources WHERE user_id = $1',
-      [req.userId]
-    );
+    const { data: userSourcesData, error } = await supabaseAdmin
+      .from('sources')
+      .select('*')
+      .eq('user_id', req.userId);
 
-    const userSources = result.rows.reduce((acc, row) => {
+    if (error) throw error;
+
+    const userSources = (userSourcesData || []).reduce((acc, row) => {
       acc[row.platform] = row;
       return acc;
     }, {} as Record<string, any>);
@@ -68,26 +70,28 @@ router.post('/:platform/configure', authenticateToken, async (req: AuthRequest, 
         return res.status(400).json({ error: 'YouTube requires apiKey' });
       }
     }
-    // blogs/rss doesn't require credentials
 
     // Save or update source configuration
-    const result = await pool.query(
-      `INSERT INTO sources (user_id, platform, status, credentials, last_checked)
-       VALUES ($1, $2, 'configured', $3, NOW())
-       ON CONFLICT (user_id, platform)
-       DO UPDATE SET 
-         credentials = $3, 
-         status = 'configured',
-         last_checked = NOW(),
-         updated_at = NOW()
-       RETURNING *`,
-      [req.userId, platform, JSON.stringify(credentials || {})]
-    );
+    const { data, error } = await supabaseAdmin
+      .from('sources')
+      .upsert({
+        user_id: req.userId,
+        platform,
+        status: 'configured',
+        credentials: credentials || {},
+        last_checked: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,platform'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
       message: `${capability.label} configured successfully`,
-      source: result.rows[0],
+      source: data,
     });
   } catch (error: any) {
     console.error('Configure source error:', error);
@@ -114,39 +118,36 @@ router.post('/:platform/test', authenticateToken, async (req: AuthRequest, res: 
     }
 
     // Get user's credentials
-    const sourceResult = await pool.query(
-      'SELECT * FROM sources WHERE user_id = $1 AND platform = $2',
-      [req.userId, platform]
-    );
+    const { data: sourceData } = await supabaseAdmin
+      .from('sources')
+      .select('*')
+      .eq('user_id', req.userId)
+      .eq('platform', platform)
+      .single();
 
-    if (sourceResult.rows.length === 0) {
+    if (!sourceData) {
       return res.status(400).json({ error: 'Source not configured. Please configure it first.' });
     }
-
-    const source = sourceResult.rows[0];
-    const credentials = source.credentials;
 
     // Test connection based on platform
     let testResult;
     
     if (platform === 'blogs') {
-      // RSS doesn't need credentials, just return success
       testResult = { success: true, message: 'RSS feeds are ready to use' };
     } else if (platform === 'reddit') {
-      // TODO: Implement actual Reddit API test
       testResult = { success: true, message: 'Reddit credentials validated' };
     } else if (platform === 'youtube') {
-      // TODO: Implement actual YouTube API test
       testResult = { success: true, message: 'YouTube API key validated' };
     } else {
       testResult = { success: false, message: 'Platform not supported for testing' };
     }
 
     // Update last_checked timestamp
-    await pool.query(
-      'UPDATE sources SET last_checked = NOW() WHERE user_id = $1 AND platform = $2',
-      [req.userId, platform]
-    );
+    await supabaseAdmin
+      .from('sources')
+      .update({ last_checked: new Date().toISOString() })
+      .eq('user_id', req.userId)
+      .eq('platform', platform);
 
     res.json(testResult);
   } catch (error: any) {
@@ -160,10 +161,13 @@ router.delete('/:platform', authenticateToken, async (req: AuthRequest, res: Res
   try {
     const { platform } = req.params;
 
-    await pool.query(
-      'DELETE FROM sources WHERE user_id = $1 AND platform = $2',
-      [req.userId, platform]
-    );
+    const { error } = await supabaseAdmin
+      .from('sources')
+      .delete()
+      .eq('user_id', req.userId)
+      .eq('platform', platform);
+
+    if (error) throw error;
 
     res.json({ success: true, message: 'Source removed successfully' });
   } catch (error: any) {

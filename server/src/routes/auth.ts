@@ -1,12 +1,10 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import pool from '../config/database';
-import { generateToken, authenticateToken, AuthRequest } from '../middleware/auth';
+import { supabaseAdmin } from '../config/supabase';
 
 const router = Router();
 
-// Register
-router.post('/register', async (req: Request, res: Response) => {
+// Sign up with email/password
+router.post('/signup', async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
 
@@ -14,35 +12,32 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Check if user exists
-    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'User already exists' });
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name }
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [email, passwordHash, name]
-    );
-
-    const user = result.rows[0];
-    const token = generateToken(user.id, user.email);
-
     res.status(201).json({
-      user: { id: user.id, email: user.email, name: user.name },
-      token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name
+      },
+      message: 'User created successfully'
     });
   } catch (error: any) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed' });
   }
 });
 
-// Login
+// Login with email/password
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -51,25 +46,23 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Find user
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      return res.status(401).json({ error: error.message });
     }
-
-    const user = result.rows[0];
-
-    // Check password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user.id, user.email);
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name },
-      token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name
+      },
+      token: data.session.access_token,
+      refresh_token: data.session.refresh_token
     });
   } catch (error: any) {
     console.error('Login error:', error);
@@ -77,22 +70,178 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-// Get current user
-router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, email, name, created_at FROM users WHERE id = $1',
-      [req.userId]
-    );
+// Google OAuth - Generate auth URL
+router.get('/google', (req: Request, res: Response) => {
+  const redirectTo = process.env.FRONTEND_URL || 'http://localhost:5173';
+  
+  res.json({
+    auth_url: `${process.env.SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}/auth/callback`
+  });
+});
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+// Google OAuth callback
+router.get('/google/callback', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code required' });
     }
 
-    res.json(result.rows[0]);
+    const { data, error } = await supabaseAdmin.auth.exchangeCodeForSession(code as string);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Redirect to frontend with token
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?token=${data.session.access_token}`);
+  } catch (error: any) {
+    console.error('Google callback error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+// Forgot password - Send reset email
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+
+    const redirectTo = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/reset-password`;
+
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: 'Password reset email sent' });
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to send reset email' });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { token, new_password } = req.body;
+
+    if (!token || !new_password) {
+      return res.status(400).json({ error: 'Token and new password required' });
+    }
+
+    // Verify the token and update password
+    const { data, error } = await supabaseAdmin.auth.verifyOtp({
+      token_hash: token,
+      type: 'recovery'
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Update password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      data.user.id,
+      { password: new_password }
+    );
+
+    if (updateError) {
+      return res.status(400).json({ error: updateError.message });
+    }
+
+    res.json({ message: 'Password reset successfully' });
+  } catch (error: any) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Get current user (requires auth header)
+router.get('/me', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.name,
+      created_at: user.created_at
+    });
   } catch (error: any) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Refresh token
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+      return res.status(400).json({ error: 'Refresh token required' });
+    }
+
+    const { data, error } = await supabaseAdmin.auth.refreshSession({
+      refresh_token
+    });
+
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    res.json({
+      token: data.session.access_token,
+      refresh_token: data.session.refresh_token
+    });
+  } catch (error: any) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ error: 'Failed to refresh token' });
+  }
+});
+
+// Logout
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    
+    const { error } = await supabaseAdmin.auth.signOut(token);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Failed to logout' });
   }
 });
 

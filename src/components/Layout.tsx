@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
+import { supabase } from '../lib/supabase';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -99,7 +99,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {dark ? 'Light Mode' : 'Dark Mode'}
           </button>
           <button
-            onClick={() => { apiClient.logout(); window.location.hash = '#/login'; window.location.reload(); }}
+            onClick={async () => { 
+              await supabase.auth.signOut();
+              window.location.hash = '#/login'; 
+              window.location.reload(); 
+            }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-colors"
           >
             <LogOut className="w-5 h-5" />

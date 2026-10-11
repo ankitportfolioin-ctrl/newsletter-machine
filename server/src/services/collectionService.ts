@@ -1,4 +1,4 @@
-import pool from '../config/database';
+import { supabaseAdmin } from '../config/supabase';
 import { redditCollector } from './collectors/reddit';
 import { youtubeCollector } from './collectors/youtube';
 import { rssCollector } from './collectors/rss';
@@ -7,26 +7,34 @@ import { newsletterGenerator } from './newsletterGenerator';
 export class CollectionService {
   async runCollection(userId: string, nicheId: string): Promise<string> {
     // Create run record
-    const runResult = await pool.query(
-      `INSERT INTO runs (user_id, niche_id, status, started_at)
-       VALUES ($1, $2, 'running', NOW())
-       RETURNING id`,
-      [userId, nicheId]
-    );
-    const runId = runResult.rows[0].id;
+    const { data: runData, error: runError } = await supabaseAdmin
+      .from('runs')
+      .insert({
+        user_id: userId,
+        niche_id: nicheId,
+        status: 'running',
+        started_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    if (runError) throw runError;
+    const runId = runData.id;
 
     try {
       // Get niche details
-      const nicheResult = await pool.query(
-        'SELECT * FROM niches WHERE id = $1 AND user_id = $2',
-        [nicheId, userId]
-      );
+      const { data: nicheData, error: nicheError } = await supabaseAdmin
+        .from('niches')
+        .select('*')
+        .eq('id', nicheId)
+        .eq('user_id', userId)
+        .single();
 
-      if (nicheResult.rows.length === 0) {
+      if (nicheError || !nicheData) {
         throw new Error('Niche not found');
       }
 
-      const niche = nicheResult.rows[0];
+      const niche = nicheData;
       const stats: any = {};
       const errors: string[] = [];
       const allItems: any[] = [];
@@ -95,30 +103,29 @@ export class CollectionService {
       let duplicatesSkipped = 0;
       for (const item of allItems) {
         // Check if item already exists (by URL and niche)
-        const existing = await pool.query(
-          'SELECT id FROM collected_items WHERE url = $1 AND niche_id = $2',
-          [item.url, nicheId]
-        );
+        const { data: existing } = await supabaseAdmin
+          .from('collected_items')
+          .select('id')
+          .eq('url', item.url)
+          .eq('niche_id', nicheId);
 
-        if (existing.rows.length > 0) {
+        if (existing && existing.length > 0) {
           duplicatesSkipped++;
           continue; // Skip duplicate
         }
 
-        await pool.query(
-          `INSERT INTO collected_items (niche_id, platform, title, url, author, score, excerpt, metadata)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            nicheId,
-            item.platform,
-            item.title,
-            item.url,
-            item.author,
-            item.score,
-            item.excerpt,
-            JSON.stringify(item.metadata),
-          ]
-        );
+        await supabaseAdmin
+          .from('collected_items')
+          .insert({
+            niche_id: nicheId,
+            platform: item.platform,
+            title: item.title,
+            url: item.url,
+            author: item.author,
+            score: item.score,
+            excerpt: item.excerpt,
+            metadata: item.metadata
+          });
       }
 
       // Add deduplication stats
@@ -134,40 +141,49 @@ export class CollectionService {
             new Date().toISOString().split('T')[0]
           );
 
-          const nlResult = await pool.query(
-            `INSERT INTO newsletters (user_id, niche_id, run_id, date, subject, preheader, content)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING id`,
-            [
-              userId,
-              nicheId,
-              runId,
-            newsletter.date,
-              newsletter.subject,
-              newsletter.preheader,
-              JSON.stringify(newsletter),
-            ]
-          );
-          newsletterId = nlResult.rows[0].id;
+          const { data: nlData, error: nlError } = await supabaseAdmin
+            .from('newsletters')
+            .insert({
+              user_id: userId,
+              niche_id: nicheId,
+              run_id: runId,
+              date: newsletter.date,
+              subject: newsletter.subject,
+              preheader: newsletter.preheader,
+              content: newsletter
+            })
+            .select('id')
+            .single();
+
+          if (!nlError && nlData) {
+            newsletterId = nlData.id;
+          }
         } catch (error: any) {
           errors.push(`Newsletter generation: ${error.message}`);
         }
       }
 
       // Update run record
-      await pool.query(
-        `UPDATE runs SET status = 'completed', completed_at = NOW(), stats = $1, errors = $2
-         WHERE id = $3`,
-        [JSON.stringify(stats), errors, runId]
-      );
+      await supabaseAdmin
+        .from('runs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          stats,
+          errors
+        })
+        .eq('id', runId);
 
       return runId;
     } catch (error: any) {
-      await pool.query(
-        `UPDATE runs SET status = 'failed', completed_at = NOW(), errors = $1
-         WHERE id = $2`,
-        [[error.message], runId]
-      );
+      await supabaseAdmin
+        .from('runs')
+        .update({
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          errors: [error.message]
+        })
+        .eq('id', runId);
       throw error;
     }
   }
