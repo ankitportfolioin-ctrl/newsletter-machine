@@ -1,5 +1,8 @@
 -- ============================================================================
--- Newsletter Machine — Supabase schema migration
+-- ⚠️ SUPERSEDED — DO NOT RUN. See server/supabase-migration-safe.sql instead.
+-- This file DROPS production tables (data loss). Kept for history only.
+-- ============================================================================
+-- Newsletter Machine — Supabase schema migration (UNSAFE, superseded)
 -- ============================================================================
 -- Run this ONCE in: Supabase Dashboard → SQL Editor → New query → Run
 --
