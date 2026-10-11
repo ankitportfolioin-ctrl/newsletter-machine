@@ -14,7 +14,9 @@
 --   * No fake ownership: legacy rows keep user_id-less shape in legacy_*
 --     tables. New user_id columns are NULLABLE; the backend always writes
 --     the real authenticated user id. Nothing is assigned to an arbitrary user.
---   * RLS posture untouched (no ENABLE/DISABLE/POLICY statements).
+--   * RLS deny-by-default on the six new tables (ENABLE, zero policies);
+--     legacy tables' posture untouched. service_role bypasses RLS, so the
+--     backend is unaffected; anon/authenticated get no direct table access.
 --   * Also repairs a "half-migrated" state: if new tables already exist,
 --     only the missing pieces are created.
 --
@@ -188,15 +190,36 @@ CREATE INDEX IF NOT EXISTS idx_newsletters_user_id ON newsletters(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
 
 -- ----------------------------------------------------------------------------
+-- 3b. Row-level security: deny-by-default on the new tables (REVIEW FIX).
+--    Tables created via SQL do NOT inherit RLS; Supabase default privileges
+--    would otherwise leave them readable/writable by anon/authenticated —
+--    and the anon key ships inside the frontend bundle. ENABLE with zero
+--    policies = default-deny for least-privilege roles. Zero functional
+--    impact: the backend uses service_role (bypasses RLS) and the frontend
+--    never queries tables directly (auth API only). Legacy tables are
+--    deliberately left untouched (posture unchanged; see recovery plan).
+--    Rerunnable: ENABLE ROW LEVEL SECURITY is idempotent.
+-- ----------------------------------------------------------------------------
+ALTER TABLE niches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collected_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE newsletters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+-- ----------------------------------------------------------------------------
 -- 4. exec_sql helper required by backend boot (server/src/config/supabase.ts).
---    SECURITY DEFINER, executable by service_role ONLY. Revoked from
---    PUBLIC/anon/authenticated so it is never reachable with the anon key.
---    CREATE OR REPLACE makes this step rerunnable.
+--    Needed because the JS client has no SQL channel — DDL can only run via
+--    RPC. SECURITY DEFINER (runs as owner/postgres) + executable by
+--    service_role ONLY. Revoked from PUBLIC/anon/authenticated so it is
+--    never reachable with the anon key. SET search_path pins unqualified
+--    names to public (REVIEW FIX). CREATE OR REPLACE makes this rerunnable.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION exec_sql(sql TEXT)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   EXECUTE sql;

@@ -103,8 +103,7 @@ catch → HTTP 500 on all data endpoints. Verified live (`GET /api/niches`
   remotely (count probes returned inconsistent 404/206). The pre-migration
   checklist (§5) requires the owner to record them from the SQL Editor.
 - Production RLS enablement/policies are unknown (no RLS SQL exists in the
-  repo; only aspirational docs). The migration is RLS-neutral (§3.4); §6 Q8
-  inspects actual state. The backend uses service_role, which bypasses RLS,
+  repo; only aspirational docs). The migration enables RLS deny-by-default on new tables only (§2, §6.2); verify-file Q8 inspects actual state. The backend uses service_role, which bypasses RLS,
   so the app works under any RLS posture.
 - Whether `exec_sql` RPC already exists is unknown. The safe migration uses
   `CREATE OR REPLACE` (works in both cases); the hardened init reports either
@@ -126,7 +125,7 @@ restorable by a single rename. Old-only tables (`items`, `clusters`,
 | No fake ownership | `user_id` stays NULLABLE per backend schema; legacy rows remain in `legacy_*` with no owner. New rows always carry the real authenticated id (middleware). Legacy rows are invisible to per-user queries — correct, not guessed. |
 | Type conflicts resolved, not forced | Legacy PKs (`varchar`/`int4`) can never satisfy the UUID PK + `gen_random_uuid()` default + FK chains; in-place ALTER would be high-risk. Fresh tables avoid the entire class. |
 | FKs/indexes/upserts | Created exactly per §1.1, including the FKs behind the `niches(name)` embeds and both UNIQUE upsert targets. |
-| RLS | Untouched — no `ENABLE/DISABLE/POLICY` statements. Service_role bypass means app behavior is identical under any posture. Optional hardening is a separate, explicitly-approved step (see §6). |
+| RLS | ENABLED deny-by-default (zero policies) on the six new tables — added in safety review §6.2. Legacy tables untouched. Service_role bypasses RLS so the backend is unaffected; anon/authenticated get no direct table access. |
 | `exec_sql` helper | `CREATE OR REPLACE`, `SECURITY DEFINER`, revoked from `PUBLIC`/`anon`/`authenticated`, granted to `service_role` only. Required: the hardened boot init calls it. Without this section the backend keeps crash-looping (§1.4). |
 | Pre-states handled | (a) Current prod (old tables, no legacy_*): rename + create. (b) Already-migrated-via-drop: renames skip, creates fill gaps. (c) Rerun: full no-op. (d) New-schema tables pre-existing: `user_id` check prevents renaming them. |
 | Legacy data review | The 2 `legacy_niches` rows (and any other legacy rows) remain queryable for manual review; mapping them into new tables is a human decision, not part of this migration. |
@@ -253,10 +252,12 @@ ALTER TABLE IF EXISTS legacy_feedback    RENAME TO feedback;
   Site URL/redirects still need setting. Independent of the DB work.
 - `OPENROUTER_API_KEY` on Render is unverified — newsletter *generation*
   (not collection/storage) needs it. Independent.
-- Optional follow-up hardening (NOT in this migration, needs its own
-  approval): `ENABLE ROW LEVEL SECURITY` on the six new tables. Safe
-  because service_role bypasses RLS and the frontend never queries tables
-  directly — but it changes posture, so it is deliberately excluded here.
+- ~~Optional follow-up hardening: `ENABLE ROW LEVEL SECURITY`~~ — **done:**
+  safety review (§6.2) found SQL-created tables would otherwise ship
+  RLS-disabled and anon-accessible, so the migration now enables RLS
+  (deny-by-default, no policies) on all six new tables. Legacy tables
+  intentionally unchanged — verify their posture with `supabase-verify.sql`
+  §8 and treat any exposure there as a separate decision.
 
 ---
 
@@ -269,5 +270,130 @@ ALTER TABLE IF EXISTS legacy_feedback    RENAME TO feedback;
    only if verification fails and after new-table rows (if any) are exported.
 
 **Explicitly not approved by this plan:** running the superseded drop
-migration, assigning legacy rows to any user, changing RLS, touching
+migration, assigning legacy rows to any user, changing legacy-table RLS, touching
 `auth.*`, editing backend/frontend code, or deploying anything.
+
+---
+
+## 6. Safety review of commit `26ea60f` (review-only, no production contact)
+
+Reviewer re-read all artifacts adversarially. Two FAILs were found and fixed
+**in the local files only** (review amendments R1, R2 below — no production
+execution, no deploy). Classifications: `PASS` / `FAIL` / `BLOCKED`.
+
+### 6.1 Data preservation — PASS
+
+- Old `server/supabase-migration.sql` carries the superseded header (verified
+  lines 1–4) and is excluded from the execution path.
+- Safe file re-scanned: **zero** `DROP`/`TRUNCATE`/`DELETE` statements
+  (byte-level check); only `ALTER … RENAME`, `CREATE [TABLE|INDEX] IF NOT
+  EXISTS`, `CREATE OR REPLACE FUNCTION`, `REVOKE`/`GRANT`, `SELECT`, `DO`
+  notice blocks.
+- Rename guards verified per table: fires only when the live table exists
+  AND `legacy_*` is absent AND the live table **lacks a `user_id` column** —
+  so a correct (already-migrated) table can never be archived by a rerun.
+- FK effects: Postgres constraints follow the table OID, so renames cannot
+  dangle references; legacy FKs (if any) stay pointed at `legacy_*`, new FKs
+  are created fresh per §1.1 (including the two FKs behind the
+  `niches(name)` PostgREST embeds). Old-only tables untouched.
+- Partial-execution safety: every step is guarded, so both SQL-Editor
+  semantics are safe — full-transaction editors roll everything back on
+  error; statement-by-statement editors leave a resumable state that a rerun
+  completes (rename skips via `legacy_*` presence, creates no-op).
+- Legacy rows: preserved in place, never assigned to any user (`user_id`
+  stays nullable; app queries filter by authenticated id, so unowned rows are
+  invisible, not misattributed). The 2 legacy niche rows remain reviewable.
+
+### 6.2 Row-level security — FAIL → FIXED (R1, applied, requires re-check)
+
+**Finding:** the migration created the six tables with no `ENABLE ROW LEVEL
+SECURITY`. Tables created via SQL do not inherit RLS, and Supabase default
+privileges grant DML to `anon`/`authenticated` — while the anon key ships
+inside the frontend bundle. As written, the new tables would have been
+world-readable/writable across users from the moment of creation. The plan's
+original "RLS-neutral" claim was wrong: leaving RLS untouched does **not**
+protect newly created tables.
+
+**Fix applied (R1):** `ALTER TABLE … ENABLE ROW LEVEL SECURITY` on all six
+new tables, with **zero policies** (default-deny for `anon`/`authenticated`).
+Functional impact: none — verified every route uses `supabaseAdmin`
+(service_role, bypasses RLS) and the frontend never queries tables directly
+(auth API only). Per-user isolation within the API path remains
+application-level (each of the 47 call sites filters by the validated JWT's
+user id — spot-verified across niches/sources/runs/newsletters routes and
+`collectionService`); database-level protection is now default-deny for
+direct access. Legacy tables intentionally unchanged; verify-file Q8 records
+both states. **Do not add permissive policies or disable RLS to fix future
+app errors — app errors under service_role are never RLS errors.**
+
+### 6.3 `exec_sql` — FAIL → FIXED (R2, applied, requires re-check)
+
+- `SECURITY DEFINER` (owner/postgres) confirmed; necessity confirmed: the JS
+  client has no SQL channel, so DDL-at-boot can only run via RPC (a privilege
+  argument, not just convenience).
+- Grants verified: revoked from `PUBLIC` + explicitly from `anon` and
+  `authenticated` (covers pre-existing direct grants surviving
+  `CREATE OR REPLACE`); granted to `service_role` only. Unreachable with the
+  anon key. Reachable only with the service key, which already implies total
+  data access — incremental exposure is DDL-as-postgres, contained by
+  server-side-only key custody.
+- **Finding:** no `SET search_path` — dynamic `EXECUTE sql` resolved
+  unqualified names against the caller's path. **Fix applied (R2):**
+  `SET search_path = public` (init DDL is unqualified → `public`;
+  `auth.users` is schema-qualified → unaffected).
+- Safer alternative assessed: replace boot-DDL with a read-only
+  information_schema self-check and keep all DDL human-run. Practical and
+  strictly safer (removes the superuser-SQL RPC entirely). Recommended as a
+  follow-up; not required for this approval since privileges are now
+  correctly scoped.
+
+### 6.4 Backup and rollback — PASS (with conditions)
+
+- Backup ladder is real: Supabase snapshots (plan-dependent, must be
+  confirmed — not assumed), per-table CSV exports (exact at this data
+  volume), `pg_dump` + `pg_restore --list` structural check, baseline counts
+  via verify-file. Full-restore rehearsal is correctly scoped to a **separate**
+  project, never production.
+- Condition: `--list` proves structural validity, not data restorability —
+  acceptance requires either a scratch-project rehearsal or explicit owner
+  sign-off that CSV + dump + counts suffice at this data volume. Record the
+  decision in §4.1.
+- Rollback SQL verified safe and complete (drop-new → rename-back → restart);
+  limitations stated honestly (post-migration new rows must be exported
+  first; `exec_sql` persists by design; drop-migration damage would be
+  backup-only).
+- Halfway-halt response verified: stop, save the message, fix cause, rerun —
+  correct under both editor semantics (§6.1).
+
+### 6.5 Deployment consistency — PASS (with noted residual)
+
+- Render builds `master`; local master is fully pushed; no uncommitted
+  backend changes; schema-relevant code unchanged by recent commits.
+  Residual: running bundle not fingerprinted — accepted risk, mitigated by
+  post-migration endpoint checks (§4.3), which fail loudly on any skew.
+- The `e65f900` fail-fast crash-loop warning (§1.4) re-verified accurate:
+  missing/unusable `exec_sql` → rpc error → throw → `process.exit(1)` →
+  Render restart loop with the explicit message. Expected until migration;
+  self-resolving on first post-migration boot (manual restart if settled).
+
+### 6.6 Review amendments applied (local files only)
+
+- R1: six `ALTER TABLE … ENABLE ROW LEVEL SECURITY` + header/plan wording
+  (`server/supabase-migration-safe.sql`, `DATABASE_RECOVERY_PLAN.md`).
+- R2: `SET search_path = public` on `exec_sql` + necessity comment.
+- R3 (robustness, non-blocking): verify-file Q3 converted to guarded dynamic
+  counts so the file runs clean pre-migration; Q8 comment corrected to the
+  expected post-migration RLS state.
+
+### 6.7 Verdict
+
+- R1 and R2 are applied in the working tree and included in the commit that
+  carries this review. No unresolved item remains in RLS, execution
+  privileges, data preservation, or rollback safety. Remaining acceptances
+  are owner-executed checklists (backups, counts, endpoint checks), which is
+  the correct place for them — they cannot be evidenced without production
+  contact, which is out of bounds for this task.
+
+**`SAFE_TO_APPROVE`** — conditional on owner completion of §4.1 (backups +
+baselines recorded) and §4.3 (verify-file + endpoint acceptance) exactly as
+written.

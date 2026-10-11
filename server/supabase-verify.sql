@@ -44,14 +44,28 @@ BEGIN
 END
 $$;
 
--- 3. Exact row counts (run only for tables confirmed present in query 1;
---    delete/comment lines for absent tables)
-SELECT 'niches' AS tbl, COUNT(*) FROM niches;
-SELECT 'sources' AS tbl, COUNT(*) FROM sources;
-SELECT 'collected_items' AS tbl, COUNT(*) FROM collected_items;
-SELECT 'runs' AS tbl, COUNT(*) FROM runs;
-SELECT 'newsletters' AS tbl, COUNT(*) FROM newsletters;
-SELECT 'feedback' AS tbl, COUNT(*) FROM feedback;
+-- 3. Exact row counts, guarded so absent tables report instead of aborting
+--    the script (safe to run pre-migration, when most tables don't exist)
+DO $$
+DECLARE
+  t TEXT;
+  c BIGINT;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'niches','sources','collected_items','runs','newsletters','feedback',
+    'legacy_niches','legacy_sources','legacy_runs',
+    'legacy_newsletters','legacy_feedback',
+    'items','clusters','settings','item_scores'
+  ] LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('SELECT COUNT(*) FROM public.%I', t) INTO c;
+      RAISE NOTICE '%: % rows', t, c;
+    ELSE
+      RAISE NOTICE '%: ABSENT (no count)', t;
+    END IF;
+  END LOOP;
+END
+$$;
 
 -- 4. Column inventory of the new tables (must include user_id UUID, and
 --    collected_items must include niche_id/url/title)
@@ -91,8 +105,11 @@ WHERE connamespace = 'public'::regnamespace
       IN ('niches','sources','collected_items','runs','newsletters','feedback')
 ORDER BY 1;
 
--- 8. RLS posture (informational: backend uses service_role, which bypasses
---    RLS; do NOT change RLS to fix app errors)
+-- 8. RLS posture (expected after safe migration: rls_enabled = true on all
+--    six new tables, zero policies = default-deny for anon/authenticated.
+--    Backend uses service_role, which bypasses RLS. Do NOT add permissive
+--    policies or disable RLS to fix app errors — app errors are never RLS
+--    errors while service_role is used.)
 SELECT tablename, rowsecurity AS rls_enabled
 FROM pg_tables
 WHERE schemaname = 'public'
