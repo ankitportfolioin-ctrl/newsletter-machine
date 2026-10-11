@@ -4,7 +4,7 @@ import {
   ArrowLeft, ThumbsUp, ThumbsDown, ExternalLink, TrendingUp, TrendingDown, Minus,
   MessageCircle, Lightbulb, Target, Zap, BarChart3, AlertCircle
 } from 'lucide-react';
-import { getNewsletter, submitFeedback } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { Newsletter, Story } from '../types';
 
 const platformColors: Record<string, string> = {
@@ -26,8 +26,11 @@ export default function NewsletterPreview() {
 
   useEffect(() => {
     if (id) {
-      getNewsletter(id).then((nl) => {
+      apiClient.getNewsletter(id).then((nl) => {
         setNewsletter(nl);
+        setLoading(false);
+      }).catch(err => {
+        console.error('Failed to load newsletter:', err);
         setLoading(false);
       });
     }
@@ -35,10 +38,14 @@ export default function NewsletterPreview() {
 
   const handleFeedback = async (storyId: string, vote: 'up' | 'down') => {
     if (!newsletter) return;
-    await submitFeedback(newsletter.id, storyId, vote);
-    // Refresh
-    const updated = await getNewsletter(newsletter.id);
-    setNewsletter(updated);
+    try {
+      await apiClient.submitFeedback(newsletter.id, storyId, vote);
+      // Refresh
+      const updated = await apiClient.getNewsletter(newsletter.id);
+      setNewsletter(updated);
+    } catch (err) {
+      console.error('Failed to submit feedback:', err);
+    }
   };
 
   if (loading) {

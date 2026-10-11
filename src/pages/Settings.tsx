@@ -1,23 +1,17 @@
 import { useState } from 'react';
 import { Save, RefreshCw, Trash2, Key, Info } from 'lucide-react';
-import { clearAllData, seedDemoData } from '../services/api';
+// Settings page - uses real API in production
 
 export default function Settings() {
   const [saved, setSaved] = useState(false);
 
   const handleReseed = () => {
-    if (confirm('Reset all data to demo defaults? This will clear your niches, runs, and newsletters.')) {
-      seedDemoData();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    }
+    alert('In production, this would reset your data via the API. Demo mode not available with real backend.');
   };
 
   const handleClear = () => {
-    if (confirm('Clear ALL data? This cannot be undone.')) {
-      clearAllData();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    if (confirm('Clear ALL data? This cannot be undone. (Note: This would need a real API endpoint in production)')) {
+      alert('Data clearing would be handled by the backend API in production.');
     }
   };
 

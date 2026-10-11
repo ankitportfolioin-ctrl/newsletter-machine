@@ -11,10 +11,10 @@ import NewsletterPreview from './pages/NewsletterPreview';
 import Feedback from './pages/Feedback';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
-import { isAuthenticated, getTheme, setTheme } from './services/api';
+import { apiClient } from './services/apiClient';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  if (!isAuthenticated()) {
+  if (!apiClient.isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
   return <Layout>{children}</Layout>;
@@ -23,8 +23,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   useEffect(() => {
     // Initialize theme
-    const theme = getTheme();
-    setTheme(theme);
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.className = savedTheme;
   }, []);
 
   return (

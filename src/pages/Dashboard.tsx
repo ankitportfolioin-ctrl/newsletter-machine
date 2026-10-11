@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Target, Rss, History, Archive, TrendingUp, Zap } from 'lucide-react';
-import { getNiches, getSources, getRuns, getNewsletters } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { Niche, SourceStatus, RunRecord, Newsletter } from '../types';
 
 export default function Dashboard() {
@@ -12,14 +12,19 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([getNiches(), getSources(), getRuns(), getNewsletters()]).then(
-      ([n, s, r, nl]) => {
-        setNiches(n);
-        setSources(s);
-        setRuns(r);
-        setNewsletters(nl);
-      }
-    );
+    Promise.all([
+      apiClient.getNiches(),
+      apiClient.getSources(),
+      apiClient.getRuns(),
+      apiClient.getNewsletters()
+    ]).then(([n, s, r, nl]) => {
+      setNiches(n);
+      setSources(s);
+      setRuns(r);
+      setNewsletters(nl);
+    }).catch(err => {
+      console.error('Failed to load dashboard data:', err);
+    });
   }, []);
 
   const connectedSources = sources.filter(s => s.status === 'connected').length;

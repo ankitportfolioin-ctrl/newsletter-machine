@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Newspaper, Lock, AlertCircle } from 'lucide-react';
-import { authenticate } from '../services/api';
+import { Newspaper, Lock, AlertCircle, UserPlus } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
 
 export default function Login() {
-  const [token, setToken] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -14,13 +17,17 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const result = await authenticate(token.trim());
-    setLoading(false);
-
-    if (result.success) {
+    try {
+      if (isRegister) {
+        await apiClient.register(email, password, name);
+      } else {
+        await apiClient.login(email, password);
+      }
       navigate('/');
-    } else {
-      setError(result.message);
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,22 +48,54 @@ export default function Login() {
           onSubmit={handleSubmit}
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5"
         >
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center">
+            {isRegister ? 'Create Account' : 'Sign In'}
+          </h2>
+
+          {isRegister && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               <Lock className="w-4 h-4 inline mr-1" />
-              Auth Token
+              Email
             </label>
             <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter your dashboard token"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
               autoFocus
             />
-            <p className="text-xs text-gray-400 mt-1.5">
-              Hint: Type <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">demo</code> for demo access
-            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+            />
           </div>
 
           {error && (
@@ -68,15 +107,35 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={loading || !token.trim()}
+            disabled={loading || !email || !password}
             className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-medium transition-colors focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
           >
-            {loading ? 'Authenticating...' : 'Access Dashboard'}
+            {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
           </button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setError('');
+              }}
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center justify-center gap-1 mx-auto"
+            >
+              {isRegister ? (
+                <>Already have an account? Sign in</>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  Create new account
+                </>
+              )}
+            </button>
+          </div>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          In production, tokens are generated per-user and stored in .env
+          Secure authentication with JWT tokens
         </p>
       </div>
     </div>

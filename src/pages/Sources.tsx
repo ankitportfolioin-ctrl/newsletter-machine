@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
-import { getSources } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { SourceStatus } from '../types';
 
 const statusConfig = {
@@ -15,7 +15,9 @@ export default function Sources() {
   const [sources, setSources] = useState<SourceStatus[]>([]);
 
   useEffect(() => {
-    getSources().then(setSources);
+    apiClient.getSources().then(setSources).catch(err => {
+      console.error('Failed to load sources:', err);
+    });
   }, []);
 
   const connected = sources.filter(s => s.status === 'connected').length;

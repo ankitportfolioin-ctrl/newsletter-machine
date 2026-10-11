@@ -15,7 +15,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { logout, getTheme, setTheme } from '../services/api';
+import { apiClient } from '../services/apiClient';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,12 +30,13 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const [dark, setDark] = useState(getTheme() === 'dark');
+  const [dark, setDark] = useState(localStorage.getItem('theme') === 'dark');
 
   const toggleTheme = () => {
     const newTheme = dark ? 'light' : 'dark';
     setDark(!dark);
-    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.className = newTheme;
   };
 
   return (
@@ -94,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {dark ? 'Light Mode' : 'Dark Mode'}
           </button>
           <button
-            onClick={() => { logout(); window.location.hash = '#/login'; window.location.reload(); }}
+            onClick={() => { apiClient.logout(); window.location.hash = '#/login'; window.location.reload(); }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-colors"
           >
             <LogOut className="w-5 h-5" />

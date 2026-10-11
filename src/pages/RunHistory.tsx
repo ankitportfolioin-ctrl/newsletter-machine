@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Play, CheckCircle, XCircle, Loader, ChevronDown, ChevronUp } from 'lucide-react';
-import { getRuns, getNiches, triggerRun } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { RunRecord, Niche } from '../types';
 
 export default function RunHistory() {
@@ -11,10 +11,14 @@ export default function RunHistory() {
   const [selectedNiche, setSelectedNiche] = useState('');
 
   const loadData = async () => {
-    const [r, n] = await Promise.all([getRuns(), getNiches()]);
-    setRuns(r);
-    setNiches(n);
-    if (n.length > 0 && !selectedNiche) setSelectedNiche(n[0].id);
+    try {
+      const [r, n] = await Promise.all([apiClient.getRuns(), apiClient.getNiches()]);
+      setRuns(r);
+      setNiches(n);
+      if (n.length > 0 && !selectedNiche) setSelectedNiche(n[0].id);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -23,7 +27,7 @@ export default function RunHistory() {
     if (!selectedNiche) return;
     setTriggering(true);
     try {
-      await triggerRun(selectedNiche);
+      await apiClient.triggerRun(selectedNiche);
       await loadData();
     } catch (err) {
       console.error(err);

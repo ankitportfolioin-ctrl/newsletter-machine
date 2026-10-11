@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Archive as ArchiveIcon, Search, Calendar, Filter } from 'lucide-react';
-import { getNewsletters } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { Newsletter } from '../types';
 
 export default function Archive() {
@@ -12,7 +12,9 @@ export default function Archive() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getNewsletters().then(setNewsletters);
+    apiClient.getNewsletters().then(setNewsletters).catch(err => {
+      console.error('Failed to load newsletters:', err);
+    });
   }, []);
 
   const niches = [...new Set(newsletters.map(n => n.nicheName))];

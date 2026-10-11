@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, AlertCircle } from 'lucide-react';
-import { getNiches, createNiche, updateNiche, deleteNiche } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { Niche } from '../types';
 
 export default function Niches() {
@@ -19,8 +19,12 @@ export default function Niches() {
   });
 
   const loadNiches = async () => {
-    const data = await getNiches();
-    setNiches(data);
+    try {
+      const data = await apiClient.getNiches();
+      setNiches(data);
+    } catch (err) {
+      console.error('Failed to load niches:', err);
+    }
   };
 
   useEffect(() => { loadNiches(); }, []);
@@ -54,7 +58,7 @@ export default function Niches() {
 
     try {
       if (editingId) {
-        await updateNiche(editingId, {
+        await apiClient.updateNiche(editingId, {
           name: form.name,
           keywords: parseList(form.keywords),
           subreddits: parseList(form.subreddits),
@@ -64,7 +68,7 @@ export default function Niches() {
           enabled: form.enabled,
         });
       } else {
-        await createNiche({
+        await apiClient.createNiche({
           name: form.name,
           keywords: parseList(form.keywords),
           subreddits: parseList(form.subreddits),
@@ -82,14 +86,22 @@ export default function Niches() {
   };
 
   const handleToggle = async (niche: Niche) => {
-    await updateNiche(niche.id, { enabled: !niche.enabled });
-    loadNiches();
+    try {
+      await apiClient.updateNiche(niche.id, { enabled: !niche.enabled });
+      loadNiches();
+    } catch (err) {
+      console.error('Failed to toggle niche:', err);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this niche? This cannot be undone.')) {
-      await deleteNiche(id);
-      loadNiches();
+      try {
+        await apiClient.deleteNiche(id);
+        loadNiches();
+      } catch (err) {
+        console.error('Failed to delete niche:', err);
+      }
     }
   };
 

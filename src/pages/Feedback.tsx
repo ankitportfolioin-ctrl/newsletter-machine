@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ThumbsUp, ThumbsDown, TrendingUp } from 'lucide-react';
-import { getFeedbackStats } from '../services/api';
+import { apiClient } from '../services/apiClient';
 import { FeedbackStats, Platform } from '../types';
 
 const platformLabels: Record<Platform, string> = {
@@ -29,7 +29,9 @@ export default function Feedback() {
   const [stats, setStats] = useState<FeedbackStats | null>(null);
 
   useEffect(() => {
-    getFeedbackStats().then(setStats);
+    apiClient.getFeedbackStats().then(setStats).catch(err => {
+      console.error('Failed to load feedback stats:', err);
+    });
   }, []);
 
   if (!stats) {
