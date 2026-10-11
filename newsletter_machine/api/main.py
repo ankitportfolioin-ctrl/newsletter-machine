@@ -81,9 +81,10 @@ def create_app() -> FastAPI:
         # Add security headers
         for header, value in SECURITY_HEADERS.items():
             response.headers[header] = value
-        # Add CSP header (relaxed for dashboard/docs, strict for API)
+        # Add CSP header (relaxed for dashboard/docs/newsletter-preview, strict for API)
         is_dashboard = request.url.path.startswith("/dashboard") or request.url.path == "/"
         is_docs = request.url.path in ("/docs", "/redoc", "/openapi.json")
+        is_newsletter_preview = request.url.path.startswith("/newsletters/") and request.url.path.endswith("/preview")
         
         if is_dashboard:
             # Dashboard needs inline scripts/styles for HTMX and templates
@@ -113,6 +114,19 @@ def create_app() -> FastAPI:
                 + img_src + "; "
                 + font_src + "; "
                 + worker_src + "; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        elif is_newsletter_preview:
+            # Newsletter preview uses inline styles from premailer
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: https:; "
+                "font-src 'self'; "
+                "connect-src 'self'; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
                 "form-action 'self'"
