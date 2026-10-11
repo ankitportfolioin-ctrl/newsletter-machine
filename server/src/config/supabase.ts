@@ -14,12 +14,24 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
+// Run a DDL statement via the exec_sql helper. Fails fast with a clear
+// message instead of silently leaving the schema half-built (which
+// surfaces later as 500s on every endpoint).
+async function execDdl(label: string, sql: string): Promise<void> {
+  const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
+  if (error) {
+    throw new Error(
+      `DB init failed at "${label}": ${error.message}. ` +
+      `Run server/supabase-migration.sql in the Supabase SQL Editor, then restart.`
+    );
+  }
+}
+
 // Initialize database schema
 export const initializeDatabase = async () => {
   try {
     // Create niches table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('niches', `
         CREATE TABLE IF NOT EXISTS niches (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -33,12 +45,10 @@ export const initializeDatabase = async () => {
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
         )
-      `
-    });
+      `);
 
     // Create sources table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('sources', `
         CREATE TABLE IF NOT EXISTS sources (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -51,12 +61,10 @@ export const initializeDatabase = async () => {
           updated_at TIMESTAMP DEFAULT NOW(),
           UNIQUE(user_id, platform)
         )
-      `
-    });
+      `);
 
     // Create collected_items table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('collected_items', `
         CREATE TABLE IF NOT EXISTS collected_items (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           niche_id UUID REFERENCES niches(id) ON DELETE CASCADE,
@@ -69,12 +77,10 @@ export const initializeDatabase = async () => {
           metadata JSONB DEFAULT '{}',
           collected_at TIMESTAMP DEFAULT NOW()
         )
-      `
-    });
+      `);
 
     // Create runs table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('runs', `
         CREATE TABLE IF NOT EXISTS runs (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -86,12 +92,10 @@ export const initializeDatabase = async () => {
           errors TEXT[] DEFAULT '{}',
           created_at TIMESTAMP DEFAULT NOW()
         )
-      `
-    });
+      `);
 
     // Create newsletters table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('newsletters', `
         CREATE TABLE IF NOT EXISTS newsletters (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -103,12 +107,10 @@ export const initializeDatabase = async () => {
           content JSONB NOT NULL,
           created_at TIMESTAMP DEFAULT NOW()
         )
-      `
-    });
+      `);
 
     // Create feedback table
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('feedback', `
         CREATE TABLE IF NOT EXISTS feedback (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -118,20 +120,17 @@ export const initializeDatabase = async () => {
           created_at TIMESTAMP DEFAULT NOW(),
           UNIQUE(user_id, newsletter_id, story_id)
         )
-      `
-    });
+      `);
 
     // Create indexes
-    await supabaseAdmin.rpc('exec_sql', {
-      sql: `
+    await execDdl('indexes', `
         CREATE INDEX IF NOT EXISTS idx_niches_user_id ON niches(user_id);
         CREATE INDEX IF NOT EXISTS idx_collected_items_niche_id ON collected_items(niche_id);
         CREATE INDEX IF NOT EXISTS idx_collected_items_url ON collected_items(url);
         CREATE INDEX IF NOT EXISTS idx_runs_user_id ON runs(user_id);
         CREATE INDEX IF NOT EXISTS idx_newsletters_user_id ON newsletters(user_id);
         CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
-      `
-    });
+      `);
 
     console.log('✅ Supabase database initialized successfully');
   } catch (error) {
