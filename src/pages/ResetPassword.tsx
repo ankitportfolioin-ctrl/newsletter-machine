@@ -14,13 +14,52 @@ export default function ResetPassword() {
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    // Check if we have a recovery token in the URL
-    const token = searchParams.get('token');
-    const type = searchParams.get('type');
-    
-    if (token && type === 'recovery') {
-      setHasToken(true);
-    }
+    const verifyRecoveryToken = async () => {
+      // Collect recovery params from URL query and/or hash-router fragment
+      const merged = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+      const qIndex = hash.indexOf('?');
+      if (qIndex !== -1) {
+        new URLSearchParams(hash.substring(qIndex + 1)).forEach((v, k) => {
+          if (!merged.has(k)) merged.set(k, v);
+        });
+      }
+      searchParams.forEach((v, k) => {
+        if (!merged.has(k)) merged.set(k, v);
+      });
+
+      // Legacy query style (?token=&type=recovery)
+      const token = merged.get('token');
+      const type = merged.get('type');
+
+      if (token && type === 'recovery') {
+        setHasToken(true);
+        return;
+      }
+
+      // Modern PKCE style (?token_hash=&type=recovery) — verify to create session
+      const tokenHash = merged.get('token_hash');
+      if (tokenHash && type === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        });
+        if (error) {
+          setError('This reset link is invalid or has expired. Please request a new one.');
+          return;
+        }
+        setHasToken(true);
+        return;
+      }
+
+      // Implicit flow: supabase-js auto-detects #access_token= session on load
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setHasToken(true);
+      }
+    };
+
+    verifyRecoveryToken();
   }, [searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {

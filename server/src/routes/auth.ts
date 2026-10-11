@@ -94,9 +94,9 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.message });
     }
 
-    // Redirect to frontend with token
+    // Redirect to frontend with token (HashRouter: route lives after #/)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/auth/callback?token=${data.session.access_token}`);
+    res.redirect(`${frontendUrl}/#/auth/callback?token=${data.session.access_token}`);
   } catch (error: any) {
     console.error('Google callback error:', error);
     res.status(500).json({ error: 'Authentication failed' });
@@ -112,7 +112,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email required' });
     }
 
-    const redirectTo = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/reset-password`;
+    const redirectTo = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#/auth/reset-password`;
 
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo

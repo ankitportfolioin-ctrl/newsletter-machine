@@ -11,7 +11,9 @@ export const signUpWithEmail = async (email: string, password: string, name?: st
     email,
     password,
     options: {
-      data: { name }
+      data: { name },
+      // HashRouter: callback route lives after #/
+      emailRedirectTo: `${window.location.origin}/#/auth/callback`
     }
   });
   return { data, error };
@@ -29,7 +31,7 @@ export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`
+      redirectTo: `${window.location.origin}/#/auth/callback`
     }
   });
   return { data, error };
@@ -37,7 +39,7 @@ export const signInWithGoogle = async () => {
 
 export const resetPassword = async (email: string) => {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`
+    redirectTo: `${window.location.origin}/#/auth/reset-password`
   });
   return { data, error };
 };

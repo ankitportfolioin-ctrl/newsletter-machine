@@ -9,11 +9,48 @@ export default function AuthCallback() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Merge params from URL query, hash-router query, and raw fragments.
+    // Supabase may deliver tokens as ?token_hash= (PKCE), ?code= (OAuth),
+    // or #access_token= (implicit) — at URL level or inside the hash.
+    const collectParams = (): URLSearchParams => {
+      const merged = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+      const qIndex = hash.indexOf('?');
+      if (qIndex !== -1) {
+        new URLSearchParams(hash.substring(qIndex + 1)).forEach((v, k) => {
+          if (!merged.has(k)) merged.set(k, v);
+        });
+      }
+      hash.split('#').slice(1).forEach((part) => {
+        if (part.includes('=')) {
+          new URLSearchParams(part).forEach((v, k) => {
+            if (!merged.has(k)) merged.set(k, v);
+          });
+        }
+      });
+      searchParams.forEach((v, k) => {
+        if (!merged.has(k)) merged.set(k, v);
+      });
+      return merged;
+    };
+
     const handleCallback = async () => {
       try {
-        // Check for token in URL (from our backend callback)
-        const token = searchParams.get('token');
-        
+        const params = collectParams();
+
+        // 0. Supabase error redirect (expired/invalid link, denied access)
+        const urlError = params.get('error_description') || params.get('error');
+        if (urlError) {
+          throw new Error(
+            urlError === 'access_denied'
+              ? 'Access denied. The link may have expired — please request a new one.'
+              : urlError
+          );
+        }
+
+        // 1. Check for token in URL (from our backend callback)
+        const token = params.get('token');
+
         if (token) {
           // Set the session with the token
           const { error } = await supabase.auth.setSession({
@@ -26,11 +63,33 @@ export default function AuthCallback() {
           return;
         }
 
-        // Handle Supabase's built-in OAuth callback
+        // 2. PKCE-style email confirmation / OAuth (?token_hash=&type= or ?code=)
+        const tokenHash = params.get('token_hash');
+        const type = params.get('type');
+        if (tokenHash && type) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as any,
+          });
+          if (error) throw error;
+          navigate('/');
+          return;
+        }
+
+        const code = params.get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          navigate('/');
+          return;
+        }
+
+        // 3. Handle Supabase's built-in OAuth/implicit callback
+        // (supabase-js auto-detects #access_token= sessions on load)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) throw sessionError;
-        
+
         if (session) {
           navigate('/');
         } else {
