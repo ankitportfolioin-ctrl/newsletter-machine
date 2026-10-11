@@ -125,41 +125,9 @@ class ApiClient {
     return this.request<FeedbackStats>('/newsletters/feedback/stats');
   }
 
-  // Sources (mock for now - in production this would be a real endpoint)
+  // Sources
   async getSources(): Promise<SourceStatus[]> {
-    // This would be a real API endpoint in production
-    return [
-      {
-        platform: 'reddit',
-        label: 'Reddit',
-        status: 'connected',
-        lastChecked: new Date().toISOString(),
-        itemsCollected: 0,
-        message: 'Connected via Reddit API',
-        icon: 'reddit',
-        color: '#ff4500',
-      },
-      {
-        platform: 'youtube',
-        label: 'YouTube',
-        status: 'connected',
-        lastChecked: new Date().toISOString(),
-        itemsCollected: 0,
-        message: 'Connected via YouTube Data API',
-        icon: 'youtube',
-        color: '#ff0000',
-      },
-      {
-        platform: 'blogs',
-        label: 'Blogs & RSS',
-        status: 'connected',
-        lastChecked: new Date().toISOString(),
-        itemsCollected: 0,
-        message: 'RSS feed parser active',
-        icon: 'rss',
-        color: '#f97316',
-      },
-    ];
+    return this.request<SourceStatus[]>('/sources');
   }
 }
 

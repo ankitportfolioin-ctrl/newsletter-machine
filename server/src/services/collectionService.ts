@@ -91,8 +91,20 @@ export class CollectionService {
         }
       }
 
-      // Save collected items
+      // Save collected items with deduplication
+      let duplicatesSkipped = 0;
       for (const item of allItems) {
+        // Check if item already exists (by URL and niche)
+        const existing = await pool.query(
+          'SELECT id FROM collected_items WHERE url = $1 AND niche_id = $2',
+          [item.url, nicheId]
+        );
+
+        if (existing.rows.length > 0) {
+          duplicatesSkipped++;
+          continue; // Skip duplicate
+        }
+
         await pool.query(
           `INSERT INTO collected_items (niche_id, platform, title, url, author, score, excerpt, metadata)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -108,6 +120,9 @@ export class CollectionService {
           ]
         );
       }
+
+      // Add deduplication stats
+      stats.deduplication = { skipped: duplicatesSkipped };
 
       // Generate newsletter if we have enough items
       let newsletterId = null;

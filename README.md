@@ -1,5 +1,7 @@
 # Newsletter Machine - Production Ready
 
+> **Quick Start:** See [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete setup instructions.
+
 A full-stack AI-powered newsletter generation platform that aggregates content from multiple sources (Reddit, YouTube, RSS feeds) and generates curated newsletters using OpenAI.
 
 ## Features

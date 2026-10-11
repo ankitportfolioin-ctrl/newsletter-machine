@@ -8,6 +8,7 @@ import authRoutes from './routes/auth';
 import nichesRoutes from './routes/niches';
 import runsRoutes from './routes/runs';
 import newslettersRoutes from './routes/newsletters';
+import sourcesRoutes from './routes/sources';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/niches', nichesRoutes);
 app.use('/api/runs', runsRoutes);
 app.use('/api/newsletters', newslettersRoutes);
+app.use('/api/sources', sourcesRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

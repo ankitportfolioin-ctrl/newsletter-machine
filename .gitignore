@@ -3,3 +3,21 @@ node_modules/
 dist/
 build/
 *.log
+
+# Environment files
+.env
+.env.local
+.env.production
+server/.env
+server/.env.local
+server/.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
