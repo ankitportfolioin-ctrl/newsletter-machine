@@ -148,6 +148,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.message });
     }
 
+    if (!data.user) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
     // Update password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       data.user.id,
@@ -211,6 +215,10 @@ router.post('/refresh', async (req: Request, res: Response) => {
       return res.status(401).json({ error: error.message });
     }
 
+    if (!data.session) {
+      return res.status(401).json({ error: 'No session returned' });
+    }
+
     res.json({
       token: data.session.access_token,
       refresh_token: data.session.refresh_token
@@ -232,7 +240,7 @@ router.post('/logout', async (req: Request, res: Response) => {
 
     const token = authHeader.substring(7);
     
-    const { error } = await supabaseAdmin.auth.signOut(token);
+    const { error } = await supabaseAdmin.auth.admin.signOut(token);
 
     if (error) {
       return res.status(400).json({ error: error.message });
